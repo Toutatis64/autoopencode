@@ -1,0 +1,3 @@
+eval_window: 8
+exhaustion_threshold: 5
+stagnation_threshold: 6

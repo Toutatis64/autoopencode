@@ -1,0 +1,12 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.mypy]
+ignore_missing_imports = true
+warn_unused_ignores = false
+explicit_package_bases = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"

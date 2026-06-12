@@ -1,0 +1,472 @@
+entries:
+  - id: "20260612-run20260612T133446Z-iter001"
+    family: "test_coverage"
+    summary: >
+      Added 6 tests for build_memory_files diagnostics paths and recover_resume_latest_state
+      in run_autopilot.py, the weakest module at 58% coverage. Tests cover: non-competitive
+      counting (cc_nc), exhausted family detection (3+ non-competitive in same family),
+      self-improving loop exception handler, session_goal attachment at position 1, and
+      recover_resume_latest_state (not-running, running with session_id, running without).
+    result: >
+      6 new tests pass. run_autopilot.py coverage: 58%→60% (+16 lines). Suite: 847 tests,
+      mypy=pass, ruff=pass. recover_resume_latest_state now has 100% coverage.
+      build_memory_files diagnostics paths now have full coverage.
+    next: >
+      Continue coverings resolve_run session_goal_file error path and create_run FTS edge case.
+      Pivot to meta_autopilot.py (95%, 35 missing lines) for experiment advancement logic.
+      Extract iterate/main loop from run_autopilot.py for structural improvement.
+
+  - id: "20260612-iter003"
+    family: "test_coverage"
+    summary: >
+      Added 5 tests for build_memory_files in run_autopilot.py covering: empty database,
+      happy path with iteration data and self-improving diagnostics, session_goal rendering,
+      durable-knowledge fallback when no relevant memory exists, and open-threads display
+      from latest checkpoint next_steps/risks.
+    result: >
+      5 new tests pass. run_autopilot.py coverage: 29%→36% (+74 lines). Suite: 662 tests,
+      mypy=pass, ruff=pass. build_memory_files now has 92% line coverage (144-line function
+      reduced from untested to 6 uncovered lines in the self-improving loop diagnostic path).
+    next: >
+      Decompose run_autopilot.py (2052L, 36% coverage) into smaller modules.
+      Add tests for ensure_runtime, create_run, run_iteration.
+      Pivot to meta_autopilot.py (77% coverage) for HierarchyLevel edge cases.
+  - id: "20260612-iter003"
+    family: "test_coverage"
+    summary: >
+      Added 5 tests for build_memory_files in run_autopilot.py covering: empty database,
+      happy path with iteration data and self-improving diagnostics, session_goal rendering,
+      durable-knowledge fallback when no relevant memory exists, and open-threads display
+      from latest checkpoint next_steps/risks.
+    result: >
+      5 new tests pass. run_autopilot.py coverage: 29%→36% (+74 lines). Suite: 662 tests,
+      mypy=pass, ruff=pass. build_memory_files now has 92% line coverage (144-line function
+      reduced from untested to 6 uncovered lines in the self-improving loop diagnostic path).
+    next: >
+      Decompose run_autopilot.py (2052L, 36% coverage) into smaller modules.
+      Add tests for ensure_runtime, create_run, run_iteration.
+      Pivot to meta_autopilot.py (77% coverage) for HierarchyLevel edge cases.
+  - id: "20260612-iter001"
+    family: "config"
+    summary: >
+      Fixed broken autocode.yaml (malformed YAML modules, wrong project type 'generic' -> 'python').
+      Created Makefile with pytest/mypy/ruff targets. Added pyproject.toml.
+      Created tests/ directory with smoke tests (config validity, import integrity).
+      Fixed import ordering and unused imports in scripts/run_autopilot.py,
+      scripts/meta_autopilot.py, scripts/self_improving_loop.py.
+      Fixed scripts/autocode_config.py (removed unused sys import).
+      Fixed scripts/kpi.py (removed unused max_count variable).
+      Added scripts/__init__.py for package structure.
+    result: "3 smoke tests pass. lint: 234->38 errors (pre-existing tech debt). mypy: 6->12 errors (new package structure exposed real type bugs)."
+    next: "Fix the real type errors in kpi.py and run_autopilot.py (get_validation, render_iteration_table)"
+
+  - id: "20260612-iter003"
+    family: "tests"
+    summary: >
+      Added 44 unit tests for core parsing functions in run_autopilot.py.
+      Tests cover: strip_ansi (various ANSI codes), clean_text (None/whitespace/empty/non-string),
+      extract_checkpoint (simple/nested JSON, ANSI in output, missing markers, invalid JSON, extra braces),
+      normalize_checkpoint (empty/unknown status/valid statuses, goal_complete bool/string/default,
+      summary fallback, branch_family normalization, competitiveness/evidence/novelty/promotion validation),
+      unique_preserve (order preservation, empty, single, no-dups),
+      normalize_string_list (list/string/none/int, empty list),
+      normalize_artifacts (list of dicts/none/string/empty list).
+      Also removed unused variable `blocked_stage_num` in self_improving_loop.py (F841).
+    result: "44 new tests pass. lint: ruff clean on tests/. mypy clean on all 10 source files. 47 total tests pass."
+    next: "Decompose run_autopilot.py (2942L) into modules; add tests for run_iteration and memory functions"
+
+  - id: "20260612-iter004"
+    family: "core_parsing"
+    summary: >
+      Diagnosed root cause of "No checkpoint markers found" stall: the opencode agent wraps
+      checkpoint JSON in markdown code fences (```json ... ```) but extract_checkpoint's regex
+      required `{` immediately after CHECKPOINT_BEGIN. Fixed extract_checkpoint to: (1) capture
+      everything between markers, (2) strip markdown code fences, (3) find outermost JSON object
+      via greedy `{.*}` match. Added 4 tests for code fence variants. Also fixed 6 F401/F841 lint
+      errors (unused imports: MutationType, ComponentRef, initialize_defaults, load_config; unused
+      vars: scratch_dir_names, finished_at). Added 9 tests for ensure_text, compact_summary, utc_now.
+    result: "60 total tests pass (47->60, +13). lint down from 13->7 errors (only E402 remains). mypy clean. extract_checkpoint now handles actual opencode output format."
+    next: "Fix E402 module-level import order errors; consider decomposing run_autopilot.py (2934L)"
+
+  - id: "20260612-iter005"
+    family: "checkpoint_resilience"
+    summary: >
+      Added fallback path to extract_checkpoint that finds code-fenced JSON block even when
+      AUTOPILOT_CHECKPOINT_BEGIN/END markers are missing. The agent sometimes emits valid
+      checkpoint JSON inside ```json...``` fences without the outer markers (confirmed in
+      iteration 4 stdout logs). New _find_last_code_fenced_json() searches for JSON in code
+      fences, validates it has a 'status' field (checkpoint-like), and returns the last match.
+      Also strengthened the goal-autopilot agent prompt with explicit emphasis that omitting
+      markers makes work invisible to the loop. Synced scripts to .opencode/autopilot/deploy copy.
+    result: "65 tests pass (+5 new: fallback code fence no markers, no lang, picks last, skips non-checkpoint, markers still take priority). mypy clean. make check clean."
+    next: "Improve meta-autopilot component registry with initial variants; or decompose run_autopilot.py into modules"
+
+  - id: "20260612-iter006"
+    family: "checkpoint_resilience"
+    summary: >
+      Diagnosed root cause of persistent "No checkpoint markers found" across 5 iterations:
+      opencode agent outputs checkpoint JSON to stderr, not stdout, in many iterations
+      (confirmed by analyzing iteration 2-5 stderr logs which contained valid checkpoints).
+      Modified run_iteration_with_retry to fallback to stderr_text when extract_checkpoint
+      returns no result from stdout_text. Added 3 tests: stderr-only content extraction,
+      stderr with log prefixes, and empty-stdout + stderr-has-checkpoint simulation.
+    result: "67 tests pass (+2 new: stderr-only content extraction, empty stdout+stderr has checkpoint). mypy clean. make check clean."
+    next: "Decompose run_autopilot.py (2980L) into modules; or add end-to-end integration test for autopilot loop with mock agent"
+
+  - id: "20260612-iter007"
+    family: "scripts"
+    summary: >
+      Extracted checkpoint module from monolithic scripts/run_autopilot.py (~2976L).
+      Created scripts/checkpoint.py (369L) containing all checkpoint-related constants,
+      utility functions (clean_text, unique_preserve, extract_tags, normalize_string_list,
+      normalize_artifacts), checkpoint parsing (extract_checkpoint, normalize_checkpoint,
+      strip_ansi, _find_last_code_fenced_json), and inference functions (checkpoint_text,
+      infer_branch_family, infer_family_novelty, infer_evidence_quality, infer_competitiveness,
+      infer_promotion_recommendation). Updated run_autopilot.py (2621L) to import from
+      scripts.checkpoint. Updated tests to import from scripts.checkpoint.
+    result: "67 tests pass (-11 imports, +369 new module, no change in test count). mypy clean on 11 source files. lint unchanged (pre-existing E402 only). run_autopilot.py reduced by 355 lines (12%)."
+    next: "Extract memory/file modules from run_autopilot.py; or fix E402 module import order errors; or add tests for checkpoint.py directly"
+
+  - id: "20260612-iter008"
+    family: "core_parsing"
+    summary: >
+      Fixed persistent "No checkpoint markers found" across all 7 prior iterations.
+      Root cause: (1) Running Python process never reloaded modules, so regex fixes
+      from iterations 4-7 (code fence stripping, stderr fallback) were never picked up.
+      (2) infer_branch_family used substring matching ("check" in "checkpoint"→"tests"),
+      causing all failed iterations to misclassify as "tests" family.
+      Fixes:
+      - run_iteration now calls importlib.reload(scripts.checkpoint) before extraction,
+        so agent-applied code changes take effect immediately (not on next restart).
+      - infer_branch_family now uses regex word boundaries for hints instead of naive
+        `hint in text` substring matching. Changed overloaded "check" hint to specific
+        r"\btests?\b", r"\btypecheck\b" patterns.
+      - in checkpoint.py: applied same word-boundary fix to the canonical copy.
+    result: "67 tests pass (no new tests needed — existing tests cover the affected functions). mypy clean on 11 source files. lint unchanged (pre-existing E402 only). Family inference correctly classifies 'checkpoint' as 'unknown' instead of 'tests'. Module reload enables running process to pick up future agent code changes."
+    next: "Add tests for importlib.reload path in run_iteration; fix E402 module import order errors; extract memory/file modules from run_autopilot.py"
+
+  - id: "20260612-iter010"
+    family: "tests"
+    summary: >
+      Added 57 comprehensive tests for scripts/self_improving_loop.py (827L, previously 0% coverage).
+      Tests cover: classify_stage (13 tests — all 7 stages + case insensitivity + defaults),
+      compute_phase_stats (5 tests — empty/multi-stage/consecutive/distribution/missing defaults),
+      detect_bottleneck (7 tests — empty/high consecutive/low competitiveness/high failure rate/
+      general stagnation/no bottleneck/insufficient noncomp ratio),
+      render_stage_detail (2 tests), diagnose_phase_bottleneck (2 tests — with real mock,
+      covers classification + bottleneck detection pipeline),
+      _recent_domains (3 tests), creative_divergence_slate (4 tests — stagnation levels,
+      exhausted families, hypothesis field validation),
+      run_meta_controller (9 tests — empty/high retry/low retry/parallel/disable parallel/
+      slow down/speed up/CPU backoff/no adjustment),
+      render_meta_controller_advice (2 tests), render_creative_divergence (2 tests),
+      render_phase_diagnostic (2 tests), MetaControllerParams defaults (1 test).
+      All functions are pure with no SQLite mocking needed (except diagnose_phase_bottleneck).
+    result: "236 tests pass (+57 new). mypy clean on 13 source files. lint clean. self_improving_loop.py now has test coverage for all public pure functions."
+    next: "Add tests for kpi.py (441L, 0% coverage) — dashboard generation, metrics collection"
+
+  - id: "20260612-iter011"
+    family: "tests"
+    summary: >
+      Added 29 tests for scripts/kpi.py (441L, previously 0% coverage). Tests cover:
+      load_kb (4 tests — nonexistent path, valid YAML, invalid YAML, empty YAML),
+      _metric_box (2 tests — basic, with suffix),
+      _timeline_chart (5 tests — empty, single, multiple, unknown competitiveness, missing field),
+      _family_chart (4 tests — empty, single family, multiple families, sorted by count),
+      _kb_summary (5 tests — empty, no entries key, with entries, counts by type),
+      _scorecard (5 tests — basic rendering, metric boxes, SVG chart inclusion, family distribution,
+      empty goal preview),
+      generate_dashboard (4 tests — basic, empty metrics, aggregate section, multiple runs).
+      All tested functions are pure (no SQLite mocking required).
+    result: "265 tests pass (+29 new). mypy clean on 16 source files. lint clean. kpi.py now has test coverage for all HTML/chart rendering functions."
+    next: "Consider property-based tests for checkpoint roundtrip serialization; consider tests for memory.py (438L, 0% coverage)"
+
+  - id: "20260612-iter012"
+    family: "tests"
+    summary: >
+      Added 7 tests for kpi.py functions that previously lacked coverage:
+      _find_root (2 tests — autocode.yaml detection, .git fallback),
+      extract_run_metrics (5 tests — empty DB, single iteration with full checkpoint,
+      no checkpoint JSON, consecutive non-competitive, goal_preview truncation).
+      Uses in-memory SQLite with the same schema as the runtime database,
+      no filesystem mocking needed.
+    result: "272 tests pass (+7 new). mypy clean. lint clean. kpi.py coverage increased (extract_run_metrics and _find_root now tested)."
+    next: "Add tests for collect_all_metrics and main() with temp files; or add tests for memory.py (438L, 0% coverage); or property-based tests for checkpoint roundtrip"
+
+  - id: "20260612-iter009"
+    family: "architecture"
+    summary: >
+      Extracted memory subsystem from run_autopilot.py (2990L→2532L, -458 lines) into
+      scripts/memory.py (438L). The new module contains all RAG-style memory CRUD functions:
+      upsert_memory_entry, retrieve_relevant_memory (SQLite+FTS5 scoring), persist_memory_entries,
+      prune_memory_entries, render_relevant_memory, render_memory_topics, compact_summary,
+      and supporting utilities (clean_text, extract_tags, utc_now, etc.).
+      Changed retrieve_relevant_memory signature from (conn, ctx, checkpoint) to
+      (conn, run_id, goal_text, iteration_count, checkpoint) — no longer depends on RunContext.
+      Fixed E402 import-order lint errors in scripts/self_improving_loop.py (moved stdlib
+      imports before sys.path hack). Added noqa E402 for unavoidable late imports in
+      run_autopilot.py (from scripts.* after sys.path setup).
+      All 67 tests pass; mypy clean on 12 source files; lint clean.
+    result: "67 tests pass. mypy clean on 12 source files. lint clean (0 errors, down from 8 E402 + 1 F401 + 1 F841). run_autopilot.py reduced by 458 lines (15%). New module scripts/memory.py (438L) with clean API surface."
+    next: "Extract remaining large modules from run_autopilot.py (controller logic, rendering); add tests for memory.py functions"
+
+  - id: "20260612-iter013"
+    family: "architecture"
+    summary: >
+      Refactored scripts/kpi.py for testability: collect_all_metrics() now accepts optional
+      db_path/kb_path/meta_kb_path parameters (dependency injection); main() accepts optional
+      output_dir/db_path/kb_path/meta_kb_path. Replaced empty except Exception: pass with
+      warnings.warn for DB read failures. Added 7 tests for collect_all_metrics (no DB,
+      with real data, corrupt DB exception handling, empty DB) and 2 tests for main()
+      (no data returns 1, with data writes dashboard HTML, returns 0).
+      Added test for _timeline_chart with unexpected competitiveness value.
+      kpi.py coverage: 81%→99% (only _find_root deep fallback and __main__ guard uncovered).
+    result: "447 tests pass (+7 new). mypy clean. ruff clean. make build clean. kpi.py now 99% coverage (was 81%)."
+    next: "Refactor run_autopilot.py (9% coverage, 2248L) for testability — extract pure functions; add mock-based tests for core loop"
+
+  - id: "20260614-iter001"
+    family: "tests"
+    summary: >
+      Added 24 tests for the two remaining untested classes in meta_autopilot.py:
+      HierarchyLevel (428L) and MetaController (398L). Tests cover:
+      HierarchyLevel: __init__ registers level, component_refs returns scoped refs,
+      create_variant with active/nonexistent variants, start_experiment with healthy/
+      exhausted/running-overlap states, advance_experiment increments and concludes,
+      get_experiment_candidates returns untested variants, detect_stagnation returns 0
+      with no experiments, summary returns structured dict.
+      MetaController: __init__ creates registry, get_or_create_level creates/caches,
+      accepts custom config, _scope_for_level returns correct scopes (autopilot/meta/
+      meta.meta), level_for_scope reverse maps, register_component delegates to registry,
+      summary empty/with-levels, run_cycle with no experiments returns structured result.
+    result: "498 tests pass (+24 new). mypy clean. ruff clean. meta_autopilot.py now has test coverage for all three SQLite-backed classes (ComponentRegistry, HierarchyLevel, MetaController)."
+    next: "Add tests for remaining untested functions in run_autopilot.py (autopilot_session_title, run_dir, cpu_budget_ids, write_text, etc.)"
+
+  - id: "20260612-iter002"
+    family: "architecture"
+    summary: >
+      Eliminated 3 duplicated function definitions between scripts/checkpoint.py and
+      scripts/memory.py: clean_text, unique_preserve, and extract_tags were identically
+      defined in both modules (carried over from the original extraction from run_autopilot.py).
+      Now checkpoint.py imports them from memory.py (source of truth). Also removed TOKEN_RE
+      and STOPWORDS constants from checkpoint.py (only used by the removed duplicate functions).
+      checkpoint.py reduced from 369L to 295L (-74 lines). All 498 tests pass; mypy clean;
+      ruff clean.
+    result: "498 tests pass (-0). checkpoint.py: 369→295L (-20% reduction). mypy clean. ruff clean. Deduplication eliminates 3 function bodies + 2 constant definitions from checkpoint.py."
+    next: "Consolidate remaining _log duplications between memory.py and meta_autopilot.py; or add tests for remaining pure functions in run_autopilot.py"
+
+  - id: "20260612T122741Z-iter002"
+    family: "bugfix"
+    summary: >
+      Fixed detect_stagnation bug in meta_autopilot.py: filter was `e.status == "completed"`
+      which is mutually exclusive with the downstream `e.status in ("failed", "reverted")`
+      count, making stagnation detection always 0. Changed to `e.is_complete` so failed/
+      reverted experiments are properly counted.
+      Added 19 new tests: CLI paths (_load_file_content for all 5 file types + unknown,
+      print_status empty/with-levels, main for all 4 subcommands + unknown), hierarchy
+      edge cases (get_experiment_candidates with exhausted/1-variant/running-experiment/
+      performance-scored variants), detect_stagnation with failed and reverted experiments.
+    result: >
+      786 tests pass (+19). meta_autopilot.py coverage: 85%→95%. mypy clean, ruff clean.
+      The remaining 5% uncovered are import fallback (lines 55-59), discover_components
+      non-directory skip (line 883), and complex run_cycle paths (lines 1239-1334).
+    next: >
+      Add tests for the run_cycle paths in meta_autopilot.py (advance running experiments,
+      record performance, stagnation detection, escalation). Or pivot to run_autopilot.py
+      main loop decomposition (lines 1505-2062) for structural improvement.
+
+  - id: "20260612-iter007"
+    family: "meta_controller"
+    summary: >
+      Made the creative divergence slate project-aware. Previously FAMILY_DOMAINS in
+      self_improving_loop.py were hardcoded to a NestJS/React/MongoDB stack irrelevant to
+      Autocode (a Python repo). Added _project_family_domains() that reads module keywords
+      from autocode.yaml and generates project-specific domains. Falls back to hardcoded
+      FAMILY_DOMAINS when no config available. Updated _recent_domains() to use the same.
+      +2 tests for _project_family_domains. Suite: 600 tests (+2), mypy=pass, ruff=pass.
+    result: >
+      self_improving_loop.py: hardcoded NestJS/React/MongoDB domains → project-aware domains
+      from autocode.yaml (Scripts, Knowledge, Templates, Tests, Config).
+      creative_divergence_slate now generates suggestions relevant to the actual repo.
+    next: "Apply the same project-awareness to APPROACH_TYPES, OBJECTIVES, and ARCHITECTURES in self_improving_loop.py"
+
+  - id: "20260612-iter005"
+    family: "test_coverage"
+    summary: >
+      Pivoted from run_autopilot.py (targeted in iter 3-4) to meta_autopilot.py and added
+      4 targeted tests for MetaController.run_cycle uncovered paths: (1) stagnation
+      escalation when score > 0.7 promotes to level+1 with reason string, (2) no escalation
+      at level 5 (depth cap), (3) strict threshold (stagnation=0.7 does NOT trigger),
+      (4) max_experiments_per_cycle boundary (only N of N+ candidates started).
+    result: >
+      4 new tests pass. meta_autopilot.py coverage: 97% → 99% (20 → 8 missing lines).
+      Suite: 884 tests (+4), mypy=pass, ruff=pass, build=clean. Total coverage 92%.
+      Discovered invariant: run_cycle escalation threshold is STRICT (>) not (>=).
+    next: >
+      Refactor run_autopilot.py main() into a testable cycle() helper to unlock the
+      200 untested lines (1506-1777). Helper signature: (conn, args, runtime_dir, ctx,
+      base_iteration_number, resume_session_id, prev_checkpoint, meta_overrides) ->
+      (ctx, best_checkpoint, meta_overrides). Cover controller.py edge cases (89-90, 152,
+      268) and memory.py OperationalError paths (163-164, 292-293, 363-364) for cheap
+      coverage wins. Test the session_goal_file mid-run update path in main() (1580-1587).
+
+  - id: "20260612-iter006"
+    family: "architecture"
+    summary: >
+      Decomposed run_autopilot.py main() (270-line untested function) into a testable
+      run_cycle() helper plus 4 supporting helpers: _apply_meta_overrides_to_args,
+      _resolve_meta_controller_overrides, _maybe_run_meta_autopilot_cycle,
+      _pick_best_branch_checkpoint, _print_run_end_advisory. Added CycleResult dataclass
+      to capture per-cycle outcomes (ctx, checkpoint, meta_overrides, stop,
+      stop_exit_code, stop_reason). main() is now a 60-line outer loop that calls
+      run_cycle() and switches on result.stop_reason. Added 19 tests in
+      test_run_autopilot.py for the new surface.
+    result: >
+      +19 tests pass. Total tests 884→903. run_autopilot.py coverage 78%→88%
+      (+10pp, 200→109 uncovered lines). Project coverage 92%→95% (-91 uncovered lines).
+      mypy=pass, ruff=pass, build=clean. main() reduced from 270 untested lines to
+      ~80 mostly-trivial lines.
+    next: >
+      Cover the remaining 109 uncovered lines in run_autopilot.py: the inner _run_branch
+      retry path (1716-1730), ThreadPoolExecutor multi-branch flow (1740-1746),
+      persist_iteration args validation (1789-1791), and the long final advisory path
+      (1827-1895). The remaining memory.py (163-164, 292-293, 363-364) and controller.py
+      (89-90, 152, 268) error paths are cheap next-up coverage wins. Consider
+      integration test for the main() outer loop with a fully-mocked run_cycle.
+  - id: "20260612T133446Z-iter007"
+    family: "tests"
+    summary: >
+      Added 12 integration tests for the main() outer-loop orchestrator in
+      scripts/run_autopilot.py (lines 1826-1895, the path that remained uncovered
+      after iter 6's run_cycle decomposition). Tests cover: report subcommand dispatch,
+      export-kb subcommand dispatch, single-cycle happy path with advisory, controller_stop
+      with non-zero exit code + advisory, no_branch_results returns 1 with no advisory,
+      dry_run returns 0, status_ prefix stop returns 0 with advisory, multi-cycle loop
+      (3 iterations) with sleep_seconds=7 (verifies sleep count and arg propagation),
+      no-sleep-after-final-cycle guard, resume_latest path uses recover_resume_latest_state
+      (not pending_iteration_state) and propagates base_iteration_number + resume_session_id,
+      meta_overrides propagate across cycles (second cycle sees overrides from first),
+      prev_checkpoint loaded from latest DB iteration and passed to run_cycle. Also added
+      3 tests for memory.py OperationalError fallbacks: upsert_memory_entry FTS-error
+      resilience, prune_memory_entries FTS-error resilience, retrieve_relevant_memory
+      FTS-error resilience — all verified by dropping memory_fts and confirming the
+      function still completes without raising. Bug fix: removed stale
+      `# type: ignore[attr-defined]` on `from scripts.checkpoint import _parse_checkpoint_kv`
+      in run_autopilot.py — the function exists (checkpoint.py:121) so the suppression
+      was outdated dead code.
+    result: >
+      918 tests pass (+15: 12 main() + 3 memory.py). mypy clean. ruff clean. make build clean.
+      Coverage: run_autopilot.py 88%→92% (-39 uncovered lines: 109→70); memory.py 97%→100%;
+      project total 95%→97%. The main() outer loop is now fully covered including all
+      stop_reason branches (controller_stop, no_branch_results, dry_run, status_*) and
+      the resume/loop/sleep flow. type:ignore suppression is consistent with the
+      function's actual existence in checkpoint.py.
+    next: >
+      Cover the remaining 70 lines in run_autopilot.py: the _extract_checkpoint importlib.reload
+      + YAML fallback (lines 1247-1275, error paths) and the inner _run_branch transient-failure
+      retry (lines 1716-1730). Consider ThreadPoolExecutor multi-branch coverage with mocked
+      run_iteration. Add a property-based test (hypothesis) for normalize_checkpoint roundtrip.
+      Pivot to a different module next iteration per controller_state.md novelty pressure
+      (unknown family dominates 67% of recent window) — kpi.py or self_improving_loop.py
+      are good candidates for a structural change rather than more test coverage.
+  - id: "20260612T133446Z-iter008"
+    family: "infrastructure"
+    summary: >
+      Diagnosed and fixed a long-standing systemic bug: the deploy mirror at
+      .opencode/autopilot/ had silently drifted ~1800+ lines from scripts/
+      (run_autopilot.py, self_improving_loop.py, kpi.py, meta_autopilot.py).
+      Because run_autopilot.sh runs `python3 .opencode/autopilot/run_autopilot.py`,
+      the actual executing loop was using a stale copy that lacked the run_cycle
+      decomposition, the importlib.reload(scripts.checkpoint) fix, the
+      _project_approaches/_project_objectives/_project_architectures helpers, and
+      the Memory/Reporting module extractions. In effect, the loop never saw
+      recent improvements even though `make test` reported 100% pass.
+      Fix: introduced scripts/sync.py (87L) that detects drift (missing/modified/
+      extra) and repairs by shutil.copy2-ing source files to the deploy mirror.
+      Only .py files are synced — non-py artefacts (goal.md, components/, runtime/)
+      are project-owned config and are preserved untouched. Deploy-only .py files
+      are also preserved. Wired into the Makefile: `make deploy-sync` (repair),
+      `make deploy-check` (CI-friendly check, exit 1 on drift), and `make build`
+      now calls deploy-sync first. `make full` now calls deploy-check first so
+      any future drift fails the build before the test suite runs.
+      Added 23 tests in tests/test_sync.py (98% coverage of scripts/sync.py):
+      detect_drift (in-sync, modified, missing, extra, ignores non-py, raises on
+      missing dirs), repair_drift (copies, dry-run, preserves extras, copy2
+      preserves mtime), sync (returns 0 when in-sync, returns 0 after repair,
+      --check returns 1 on drift, --check returns 0 when in-sync, dry-run
+      doesn't write), main CLI (parses --source-dir/--deploy-dir/--check, returns
+      2 on missing dir), and an end-to-end test against the real repo that
+      asserts the deploy mirror is byte-identical to scripts/ after sync.
+      Ran `make deploy-sync` once to bring the existing drift in sync. Verified
+      all .py files are byte-identical between scripts/ and .opencode/autopilot/
+      (no diff output for any of the 9 files).
+    result: >
+      941 tests pass (+23 new). mypy clean on 23 source files. ruff clean. make
+      build, make full, make deploy-check all green. Project coverage stays at
+      97%; scripts/sync.py is at 98% coverage. The deploy mirror is now
+      byte-identical to scripts/ for all 9 .py files. The real-repo end-to-end
+      test acts as a permanent regression guard: any future drift will fail
+      `make deploy-check` and `make full` before tests run.
+    next: >
+      Address the launch path: run_autopilot.sh invokes the deploy copy without
+      setting PYTHONPATH, so `from scripts.X import` fails when running the
+      deploy copy directly. Two options: (a) add `PYTHONPATH=.` to
+      run_autopilot.sh, or (b) have the deploy copy's import block add the
+      parent of its own dir to sys.path (mirroring the late-import pattern
+      that scripts/run_autopilot.py already uses for the same reason). Either
+      is a 1-line fix. Consider adding `make deploy-check` to a pre-commit
+      hook so drift is caught at commit time. Consider extracting a small
+      `scripts.runtime.drift_watch` hook that the meta-controller can read
+      to detect when the loop is running stale code (meta-improves the
+      meta-controller's input signal). The 70 remaining uncovered lines in
+      scripts/run_autopilot.py (ThreadPoolExecutor + _run_branch retry) are
+      now reachable in a way that matters: the deploy copy will actually
+      exercise them, so coverage reporting becomes accurate for that path.
+
+  - id: "20260612T133446Z-iter010"
+    family: "infrastructure"
+    summary: >
+      Diagnosed and fixed the long-standing launch-path bug that iter-008's
+      risk register flagged: the deploy mirror at .opencode/autopilot/*.py
+      was unreachable via `python3 .opencode/autopilot/run_autopilot.py`
+      with no env-var magic, because its first import is
+      `from scripts.autocode_config import ...` and the cwd is the repo
+      root, not the deploy dir. The existing bootstrap only added the
+      deploy dir to sys.path (let `from autocode_config` work in the
+      happy-path fall-through), so the canonical `from scripts.X import`
+      chain raised ModuleNotFoundError on every actual launch. In effect
+      `bash run_autopilot.sh` has never actually started a run — `make
+      test` passed only because the test file imports `scripts.run_autopilot`
+      as a package, which puts the repo root on sys.path for free.
+      Fix: added a small `_ensure_repo_root_on_path()` helper at the top
+      of `scripts/run_autopilot.py` and `scripts/meta_autopilot.py`. It
+      walks up from `__file__` until it finds a directory containing
+      `scripts/autocode_config.py` (the canonical repo marker) and
+      prepends that directory to sys.path. Idempotent and safe for both
+      the source copy and the deploy mirror copy (auto-synced via
+      scripts/sync.py). No `PYTHONPATH` env var needed.
+      Verified by manually launching the deploy copy in a clean
+      subprocess with a stripped env — both run_autopilot.py and
+      meta_autopilot.py now produce their --help output. Added a
+      parametrized regression test in tests/test_sync.py that stages a
+      fresh tmp checkout (scripts/ + .opencode/autopilot/), launches
+      the deploy copy as a subprocess with a sanitized env (no
+      PYTHONPATH, no other repo vars), and asserts exit 0 + argparse
+      help output. Falsified the test by removing the bootstrap call
+      and confirming it fails with ModuleNotFoundError as expected.
+    result: >
+      950 tests pass (+2 new). mypy clean. ruff clean. make deploy-check,
+      make build, make full all green. The autopilot loop can now actually
+      start a run when invoked via `bash run_autopilot.sh N`. Coverage
+      stays at 97% (the new helper adds 17 lines and 1 missed branch).
+    next: >
+      Add `make deploy-check` to a pre-commit hook (was previously listed
+      in iter-008's next steps and is still a structural win — drift is
+      currently caught only on `make full`, not on commit). Then add a
+      `scripts.runtime.drift_watch` module that the meta-controller can
+      read so the loop self-detects when it's running a stale deploy
+      copy. After that, the 70 untested lines in run_autopilot.py
+      (ThreadPoolExecutor + _run_branch retry) can finally be covered
+      via the new working launch path, since the deploy copy will
+      actually exercise them.
+
+

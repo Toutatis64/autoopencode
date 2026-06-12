@@ -1,2 +1,25 @@
 scripts/__pycache__
 
+
+# Autocode runtime
+.opencode/autopilot/runtime/
+.opencode/autopilot/*.sqlite3
+.opencode/autopilot/*.db
+tmp/autopilot_scratch/
+.opencode/autopilot/kpi/*.html
+.opencode/autopilot/__pycache__
+.opencode/checkpoint_output.json
+tests/__pycache__
+
+# Coverage/inspection artifacts
+# `coverage.py` (and several editors/tools) emit sibling files with a
+# `,cover` suffix or `.cover` extension when serializing annotated source.
+# These are operational noise, never source-of-truth, and have been observed
+# to leak into scripts/ and tests/ after autopilot runs. See
+# tests/test_repo_hygiene.py::test_no_cover_artifacts_in_scripts for the
+# regression guard.
+*,cover
+*.cover
+/.coverage
+/.coverage.*
+graphify-out/

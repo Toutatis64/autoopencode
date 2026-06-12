@@ -1,0 +1,3 @@
+method: config_driven
+version: 1.0.0
+metadata: {inference_backend: autocode_config, config_source: autocode.yaml > modules}

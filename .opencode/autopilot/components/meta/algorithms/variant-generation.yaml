@@ -1,0 +1,5 @@
+strategies:
+  llm_rewrite: {enabled: true, temperature: 0.7}
+  parameter_perturb: {enabled: true, rate: 0.3, magnitude: 0.2}
+  random_search: {enabled: true}
+  evolutionary: {enabled: true, population_size: 5}

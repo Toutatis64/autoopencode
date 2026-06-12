@@ -1,0 +1,6 @@
+exhaust_family_after: 3
+hard_pivot_after: 5
+diversity_window: 6
+repeat_family_streak: 3
+dominant_family_share: 0.6
+default_stop_after: 100

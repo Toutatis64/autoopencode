@@ -143,6 +143,72 @@ if [[ ${#CONVENTIONS[@]} -eq 0 ]]; then
 fi
 
 echo ""
+echo "══ Dependency Checks & Auto-Install ══"
+
+_install_attempts=0
+_install_failures=0
+
+_check_install() {
+    local name="$1" check_cmd="$2" install_cmd="$3" required="${4:-no}"
+    if eval "$check_cmd" 2>/dev/null; then
+        echo "  ✓ $name"
+    else
+        echo "  ⚠ $name — not found, installing..."
+        _install_attempts=$((_install_attempts + 1))
+        if eval "$install_cmd" 2>&1 | tail -3; then
+            echo "  ✓ $name installed"
+        else
+            _install_failures=$((_install_failures + 1))
+            if [ "$required" = "yes" ]; then
+                echo "  ✗ $name — install failed (REQUIRED)"
+            else
+                echo "  ⚠ $name — install failed (optional, continuing)"
+            fi
+        fi
+    fi
+}
+
+# 1. Python 3.10+
+_check_install \
+    "Python 3.10+" \
+    'python3 -c "import sys; exit(0 if sys.version_info >= (3,10) else 1)"' \
+    "echo 'Install Python 3.10+ from https://python.org/downloads/'" \
+    "yes"
+
+# 2. PyYAML (needed by autopilot engine)
+_check_install \
+    "PyYAML" \
+    'python3 -c "import yaml"' \
+    'python3 -m pip install pyyaml -q 2>/dev/null || python3 -m pip install pyyaml -q --break-system-packages 2>/dev/null' \
+    "yes"
+
+# 3. lean-ctx (token-efficient file/shell tools)
+_check_install \
+    "lean-ctx" \
+    'which lean-ctx' \
+    'curl -fsSL https://raw.githubusercontent.com/yvgude/lean-ctx/main/skills/lean-ctx/scripts/install.sh | bash && lean-ctx setup'
+
+# 4. graphify (knowledge graph for code understanding)
+_check_install \
+    "graphify" \
+    'python3 -c "import graphify"' \
+    'python3 -m pip install graphifyy -q 2>/dev/null || python3 -m pip install graphifyy -q --break-system-packages 2>/dev/null'
+
+# 5. opencode CLI
+if which opencode 2>/dev/null; then
+    echo "  ✓ opencode CLI"
+else
+    echo "  ⚠ opencode CLI — not found (install: https://opencode.ai)"
+    _install_failures=$((_install_failures + 1))
+fi
+
+echo ""
+if [ "$_install_failures" -gt 0 ]; then
+    echo "  $_install_failures dependency issue(s). Some features may be limited."
+    echo "  Re-run setup after installing missing deps to clear this message."
+fi
+
+echo ""
 echo "═══════════════════════════════════════════════════════════════"
 echo "  Installing..."
 
@@ -637,7 +703,6 @@ YAMLEOF
 
 cat > "$TARGET/.opencode/autopilot/components/meta/algorithms/variant-generation.yaml" <<YAMLEOF
 strategies:
-  llm_rewrite: {enabled: true, temperature: 0.7}
   parameter_perturb: {enabled: true, rate: 0.3, magnitude: 0.2}
   random_search: {enabled: true}
   evolutionary: {enabled: true, population_size: 5}
@@ -661,6 +726,14 @@ echo "  • Created component configs"
 echo 'entries: []' > "$TARGET/knowledge/autopilot_kb.yaml"
 echo 'entries: []' > "$TARGET/knowledge/meta_kb.yaml"
 echo "  • Created knowledge bases"
+
+# ── npm dependencies ─────────────────────────────────────────────────────────
+if [ -f "$AUTOCODE_SRC/.opencode/package.json" ]; then
+    cp "$AUTOCODE_SRC/.opencode/package.json" "$TARGET/.opencode/package.json"
+    cp "$AUTOCODE_SRC/.opencode/package-lock.json" "$TARGET/.opencode/package-lock.json" 2>/dev/null || true
+    echo "  • Installing npm dependencies..."
+    (cd "$TARGET/.opencode" && npm install --silent 2>/dev/null) && echo "  • npm dependencies installed" || echo "  ⚠ npm install failed (non-critical)"
+fi
 
 # ── .gitignore ───────────────────────────────────────────────────────────────
 if ! grep -q "autopilot/runtime" "$TARGET/.gitignore" 2>/dev/null; then

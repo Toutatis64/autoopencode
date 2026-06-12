@@ -246,7 +246,7 @@ def parse_args() -> argparse.Namespace:
 def ensure_runtime(runtime_dir: Path) -> sqlite3.Connection:
     runtime_dir.mkdir(parents=True, exist_ok=True)
     db_path = runtime_dir / "memory.sqlite3"
-    conn = sqlite3.connect(db_path, check_same_thread=False)
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     conn.executescript(
         """
