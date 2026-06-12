@@ -1,0 +1,76 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Autocode — Project Configuration
+# ──────────────────────────────────────────────────────────────────────────────
+# Edit this file to match your project before running the autopilot.
+# See SETUP.md for a step-by-step guide.
+#
+# Project types (with language-appropriate defaults):
+#   python, node_ts, rust, go, generic
+# Change 'type' below to switch presets for validation commands and modules.
+
+project:
+  name: "My Project"
+  description: "Short description of what this repo does"
+  type: "generic"          # python | node_ts | rust | go | generic
+
+# ── Validation commands ──────────────────────────────────────────────────────
+# The autopilot uses these to validate changes. Presets exist for each project
+# type above. Uncomment and override to customize:
+# validation:
+#   default: "pytest"
+#   typecheck: "mypy ."
+#   lint: "ruff check ."
+#   build: "python -m build"
+#   test_one: "pytest"
+#   test_all: "pytest"
+#   full: "pytest && mypy . && ruff check ."
+
+# ── Knowledge base paths (relative to project root) ──────────────────────────
+paths:
+  knowledge_base: "knowledge/autopilot_kb.yaml"
+  meta_knowledge_base: "knowledge/meta_kb.yaml"
+  goal_file: ".opencode/autopilot/goal.md"
+  runtime_dir: ".opencode/autopilot/runtime"
+  components_dir: ".opencode/autopilot/components"
+
+# ── Module areas (used for branch family classification) ─────────────────────
+# Each entry defines a module area the autopilot can work on. Presets exist
+# for each project type above. Uncomment and override to customize:
+# modules:
+#   - name: src
+#     keywords: ["src", "module", "lib"]
+#   - name: tests
+#     keywords: ["test", "pytest", "spec"]
+
+# ── Repo conventions (displayed in agent prompts as non-negotiable rules) ────
+conventions:
+  - "Tests for every fix: regression test that fails before the fix"
+  - "One focused validation per edit (test, typecheck, or lint)"
+  - "Preserve existing code patterns unless explicitly changing them"
+
+# ── Skills to make available to the autopilot agents ─────────────────────────
+skills:
+  paths:
+    - ".opencode/skills"
+
+# ── Autopilot parameters ─────────────────────────────────────────────────────
+autopilot:
+  loop:
+    sleep_seconds: 60
+    max_retries_per_iteration: 2
+    retry_backoff_seconds: 15
+    max_retry_backoff_seconds: 300
+    cpu_budget_percent: 90
+    parallel_branches_max: 3
+    timeout_seconds: 3600
+  inference:
+    exhaust_family_after: 3
+    hard_pivot_after: 5
+    diversity_window: 6
+    repeat_family_streak: 3
+    dominant_family_share: 0.6
+    default_stop_after: 100
+  meta:
+    eval_window: 8
+    exhaustion_threshold: 5
+    stagnation_threshold: 6
