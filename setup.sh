@@ -29,6 +29,7 @@ PRESET_LABELS["python"]="Python (pytest, mypy, ruff)"
 PRESET_LABELS["node_ts"]="Node.js / TypeScript (npm, tsc)"
 PRESET_LABELS["rust"]="Rust (cargo test, clippy)"
 PRESET_LABELS["go"]="Go (go test, vet)"
+PRESET_LABELS["config"]="Config-only (YAML, JSON, TOML, etc.)"
 PRESET_LABELS["generic"]="Generic / Other (make, custom)"
 
 echo ""
@@ -44,8 +45,9 @@ select PT_CHOICE in "${PRESET_LABELS[@]}"; do
         "Node.js / TypeScript (npm, tsc)") PROJECT_TYPE="node_ts"; break ;;
         "Rust (cargo test, clippy)") PROJECT_TYPE="rust"; break ;;
         "Go (go test, vet)") PROJECT_TYPE="go"; break ;;
+        "Config-only (YAML, JSON, TOML, etc.)") PROJECT_TYPE="config"; break ;;
         "Generic / Other (make, custom)") PROJECT_TYPE="generic"; break ;;
-        *) echo "  Invalid choice. Select 1-5." ;;
+        *) echo "  Invalid choice. Select 1-6." ;;
     esac
 done
 
@@ -96,6 +98,15 @@ case "$PROJECT_TYPE" in
         DEF_MODULES="core,tests,docs,scripts,config"
         MODULES_DESC="core, tests, docs, scripts, config"
         ;;
+    config)
+        DEF_TEST="yamllint ."
+        DEF_TYPECHECK="prettier --check ."
+        DEF_LINT="yamllint ."
+        DEF_BUILD="echo 'Config-only project — no build needed'"
+        DEF_FULL="yamllint . && prettier --check ."
+        DEF_MODULES="configs,schemas,ci,docs,templates"
+        MODULES_DESC="configs, schemas, ci, docs, templates"
+        ;;
 esac
 
 # ── Gather project info ──────────────────────────────────────────────────────
@@ -139,6 +150,28 @@ if [[ ${#CONVENTIONS[@]} -eq 0 ]]; then
         "Tests for every fix: regression test that fails before the fix"
         "One focused validation per edit"
         "Preserve existing code patterns"
+    )
+fi
+
+echo ""
+echo "── Step 6: Project Goals ──"
+echo "  High-level direction for the autopilot loop (persistent across sessions)."
+echo "  Describe what your project aims to achieve."
+echo "  (press Enter to use generic defaults)"
+read -r -p "  Goal description: " PROJECT_GOAL_DESC
+PROJECT_GOAL_DESC="${PROJECT_GOAL_DESC:-"Perpetually improve $PROJECT_NAME. No fixed endpoint — each iteration must leave the repo better."}"
+echo "  Enter principles (one per line, empty line to finish):"
+PRINCIPLES=()
+while true; do
+    read -r -p "  Principle: " PRIN
+    [[ -z "$PRIN" ]] && break
+    PRINCIPLES+=("$PRIN")
+done
+if [[ ${#PRINCIPLES[@]} -eq 0 ]]; then
+    PRINCIPLES=(
+        "Improve quality, coverage, performance, and architecture"
+        "Add tests for uncovered code"
+        "Fix bugs with regression tests"
     )
 fi
 
@@ -221,11 +254,11 @@ mkdir -p "$TARGET/.opencode/autopilot/kpi"
 mkdir -p "$TARGET/knowledge"
 
 # ── Copy Python engine ───────────────────────────────────────────────────────
-cp "$AUTOCODE_SRC/scripts/autocode_config.py" "$TARGET/.opencode/autopilot/autocode_config.py"
-cp "$AUTOCODE_SRC/scripts/run_autopilot.py" "$TARGET/.opencode/autopilot/run_autopilot.py"
-cp "$AUTOCODE_SRC/scripts/self_improving_loop.py" "$TARGET/.opencode/autopilot/self_improving_loop.py"
-cp "$AUTOCODE_SRC/scripts/meta_autopilot.py" "$TARGET/.opencode/autopilot/meta_autopilot.py"
-cp "$AUTOCODE_SRC/scripts/kpi.py" "$TARGET/.opencode/autopilot/kpi.py" 2>/dev/null || true
+for _py in \
+    autocode_config.py run_autopilot.py self_improving_loop.py meta_autopilot.py \
+    kpi.py launcher.py memory.py checkpoint.py controller.py reporting.py sync.py; do
+    cp "$AUTOCODE_SRC/scripts/$_py" "$TARGET/.opencode/autopilot/$_py"
+done
 echo "  • Copied Python engine"
 
 # ── Generate autocode.yaml ───────────────────────────────────────────────────
@@ -263,6 +296,16 @@ for mod in "${MODULE_NAMES[@]}"; do
   - name: $MOD
     keywords: ["$MOD"]
 YAMLEOF
+done
+
+cat >> "$TARGET/autocode.yaml" <<YAMLEOF
+
+project_goals:
+  description: "$PROJECT_GOAL_DESC"
+  principles:
+YAMLEOF
+for prin in "${PRINCIPLES[@]}"; do
+    echo "    - \"$prin\"" >> "$TARGET/autocode.yaml"
 done
 
 cat >> "$TARGET/autocode.yaml" <<YAMLEOF
@@ -334,7 +377,7 @@ $PROJECT_DESC
 - Agent \`goal-autopilot\` for bounded-iteration autonomous work
 - Agent \`goal-meta-autopilot\` to improve the autopilot itself
 - Launchers: \`./run_autopilot.sh\` · \`./run_meta_autopilot.sh\`
-- KB: \`knowledge/autopilot_kb.yaml\` · Goal: \`.opencode/autopilot/goal.md\`
+- KB: \`knowledge/autopilot_kb.yaml\` · Goals: \`autocode.yaml\` → \`project_goals\`
 
 ## Dashboard
 - View autopilot KPIs: \`python3 .opencode/autopilot/kpi.py\`
@@ -346,23 +389,24 @@ cat > "$TARGET/run_autopilot.sh" <<SHEOF
 #!/usr/bin/env bash
 set -euo pipefail
 
-GOAL_FILE=".opencode/autopilot/goal.md"
 MAX_ITERATIONS="\${1:-200}"
 SLEEP_SECONDS="\${2:-60}"
-
-if [ ! -f "\$GOAL_FILE" ]; then
-    echo "ERROR: Goal file not found at \$GOAL_FILE"
-    echo "Create it: cp .opencode/autopilot/goal.template.md \$GOAL_FILE"
-    exit 1
-fi
+SESSION_GOAL_FILE=".opencode/autopilot/goal.md"
 
 echo "═══ Autopilot — $PROJECT_NAME ═══"
-echo "  Goal: \$GOAL_FILE | Max: \$MAX_ITERATIONS | Sleep: \${SLEEP_SECONDS}s"
+echo "  Project goals from autocode.yaml | Max: \$MAX_ITERATIONS | Sleep: \${SLEEP_SECONDS}s"
 
-python3 .opencode/autopilot/run_autopilot.py \\
-    --goal-file "\$GOAL_FILE" \\
-    --max-iterations "\$MAX_ITERATIONS" \\
+ARGS=(
+    --max-iterations "\$MAX_ITERATIONS"
     --sleep-seconds "\$SLEEP_SECONDS"
+)
+
+if [ -f "\$SESSION_GOAL_FILE" ] && [ -s "\$SESSION_GOAL_FILE" ]; then
+    echo "  Session goal: \$SESSION_GOAL_FILE"
+    ARGS+=(--session-goal-file "\$SESSION_GOAL_FILE")
+fi
+
+python3 .opencode/autopilot/run_autopilot.py "\${ARGS[@]}"
 SHEOF
 chmod +x "$TARGET/run_autopilot.sh"
 
@@ -370,27 +414,28 @@ cat > "$TARGET/run_meta_autopilot.sh" <<SHEOF
 #!/usr/bin/env bash
 set -euo pipefail
 
-ORIGINAL_GOAL=".opencode/autopilot/goal.md"
 RUN_PY=".opencode/autopilot/run_autopilot.py"
 META_PY=".opencode/autopilot/meta_autopilot.py"
+SESSION_GOAL_FILE=".opencode/autopilot/goal.md"
 
 META_CYCLES="\${1:-10}"
 BATCH="\${2:-10}"
 SLEEP="\${3:-30}"
 
-if [ ! -f "\$ORIGINAL_GOAL" ]; then
-    echo "ERROR: Goal file not found at \$ORIGINAL_GOAL"
-    exit 1
-fi
-
 echo "═══ Meta-Autopilot — $PROJECT_NAME ═══"
+echo "  Project goals from autocode.yaml"
 
 python3 "\$META_PY" init 2>/dev/null || true
 python3 "\$META_PY" discover 2>/dev/null || true
 
+RUN_ARGS=(--max-iterations "\$BATCH" --sleep-seconds "\$SLEEP")
+if [ -f "\$SESSION_GOAL_FILE" ] && [ -s "\$SESSION_GOAL_FILE" ]; then
+    RUN_ARGS+=(--session-goal-file "\$SESSION_GOAL_FILE")
+fi
+
 for cycle in \$(seq 1 "\$META_CYCLES"); do
     echo "══ Cycle \$cycle/\$META_CYCLES ══"
-    python3 "\$RUN_PY" --goal-file "\$ORIGINAL_GOAL" --max-iterations "\$BATCH" --sleep-seconds "\$SLEEP" || true
+    python3 "\$RUN_PY" "\${RUN_ARGS[@]}" || true
     python3 "\$META_PY" cycle --level 1 2>&1 | sed 's/^/  [meta] /' || true
 
     STAG=\$(python3 -c "
@@ -437,7 +482,7 @@ VIBEOF
 
 cat > "$TARGET/.opencode/instructions/SESSION-LIFECYCLE.md" <<SESSEOF
 # Session lifecycle
-- Start: read the goal and KB, check current state
+- Start: read the project goals (autocode.yaml \`project_goals\`) and KB, check current state
 - Edit: one focused validation after each change
 - End: record decisions in KB, generate KPI snapshot
 SESSEOF
@@ -559,83 +604,42 @@ echo "  • Created agents (generic, any language)"
 # ── Generate goal files (generic) ────────────────────────────────────────────
 
 cat > "$TARGET/.opencode/autopilot/goal.template.md" <<GOALTEOF
-# Goal
+# Session Goal
 
-Describe the target outcome. State what improvement you want,
-what baseline it must beat, and what approaches to prioritize.
+Describe the session-specific focus. This overrides the project-level
+goals from \`autocode.yaml\` for this run.
+
+## What to Achieve
+- 
 
 ## Success Criteria
-- What must be true for \`done\`.
+- What must be true for done.
 
 ## Hard Constraints
-- Non-negotiable rules the agent must not violate.
-
-## Validation
-- The commands that best prove progress.
+- Constraints for this session only.
 
 ## Stop Conditions
-- Iteration budget, consecutive-failure budget.
+- Iteration budget for this session.
 GOALTEOF
 
 cat > "$TARGET/.opencode/autopilot/goal.md" <<GOALEOF
-# Goal
+# Session Goal
 
-**Perpetually improve $PROJECT_NAME.**
-No fixed endpoint — each iteration must leave the repo better.
+Override the project goal for this session. Be specific about what to achieve.
 
-**Always read \`knowledge/autopilot_kb.yaml\` first** — it is authoritative.
+Example: "Fix all type errors in the API layer and add integration tests."
 
-## Mandatory First Step
-1. \`git status --short\`
-2. \`$CMD_TYPECHECK\`
-3. \`$CMD_DEFAULT\`
+Leave this file empty or use the template (goal.template.md) to set a tactical
+session focus. Project-level goals from \`autocode.yaml\` are used by default.
 
-## Success Criteria (perpetual)
-Each iteration must produce at least one durable artifact:
-- New or improved code in any module
-- New or improved test
-- Confirmed dead end recorded in KB
-- Documented architecture decision
+## What to Focus On (edit this)
+- 
 
-## Hard Constraints
-- Tests for every fix; regression test fails before the fix
-- One focused validation per edit
-- No breaking changes without updating all consumers
-- Preserve existing code patterns unless explicitly changing
+## Success This Session
+- 
 
-## What Counts as Progress
-| Win | Condition |
-|---|---|
-| Bug fix | Confirmed, regression test, fix verified |
-| Test coverage | Tests for untested code, happy+error paths |
-| Type safety | Better types, no regressions |
-| Performance | Measurable speed/memory improvement |
-| Architecture | Cleaner structure, less coupling, less dead code |
-| Feature | New capability with tests, no regression |
-| Security | Vulnerability patched, validation added |
-| DX | Better tooling, scripts, docs, CI speed |
-
-## Validation
-- Default: \`$CMD_DEFAULT\`
-- Typecheck: \`$CMD_TYPECHECK\`
-- Lint: \`$CMD_LINT\`
-- Build: \`$CMD_BUILD\`
-- Full: \`$CMD_FULL\`
-
-## Stop Conditions
-- 100 consecutive iterations with no win → pause
-- 2 failed attempts in confirmed dead family → kill
-- 3 failed attempts in new family → kill
-- \`blocked\` only for real missing dependency
-
-**CRITICAL**: Always \`status: "continue"\`. This is perpetual.
-Never \`status: "done"\` or \`goal_complete: true\`.
-
-## Notes
-- Prefer structural improvements over quick fixes
-- Every artifact needs a KB entry
-- Incremental improvement or architectural leap? Choose the leap
-- Conform to existing code patterns in this repo
+## Stop When
+- 
 GOALEOF
 echo "  • Created goal files"
 

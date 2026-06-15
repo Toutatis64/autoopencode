@@ -174,12 +174,59 @@ def test_novelty_angle_suggestions_returns_list() -> None:
     assert len(suggestions) > 0
 
 
-def test_novelty_angle_suggestions_contains_expected_topics() -> None:
+def test_novelty_angle_suggestions_python_omits_node_specific_topics() -> None:
+    """The default project type is Python — the suggestions must not be the
+    generic Node/React/MongoDB boilerplate that used to ship here."""
     suggestions = novelty_angle_suggestions()
     all_text = " ".join(suggestions)
+    assert "Backend" not in all_text
+    assert "MongoDB" not in all_text
+    assert "WebSocket" not in all_text
+    assert "Bundle splitting" not in all_text and "bundle splitting" not in all_text
+    assert "Lambda" not in all_text
+
+
+def test_novelty_angle_suggestions_python_contains_python_relevant_topics() -> None:
+    suggestions = novelty_angle_suggestions()
+    all_text = " ".join(suggestions)
+    assert "mypy" in all_text or "Type safety" in all_text
+    assert "Testing" in all_text or "Test architecture" in all_text
+
+
+def test_novelty_angle_suggestions_explicit_python_explicit_rust() -> None:
+    python = novelty_angle_suggestions("python")
+    rust = novelty_angle_suggestions("rust")
+    python_text = " ".join(python)
+    rust_text = " ".join(rust)
+    assert "mypy" in python_text or "pytest" in python_text or "asyncio" in python_text
+    assert "tokio" in rust_text or "cargo" in rust_text or "rustc" in rust_text or "Rust" in rust_text
+    assert python != rust
+
+
+def test_novelty_angle_suggestions_unknown_type_falls_back_to_generic() -> None:
+    suggestions = novelty_angle_suggestions("nonexistent_project_type")
+    assert isinstance(suggestions, list)
+    assert len(suggestions) > 0
+
+
+def test_novelty_angle_suggestions_explicit_node_ts_keeps_legacy_suggestions() -> None:
+    """Regression: the original Node/React-flavoured suggestions must still be
+    available when the project type is explicitly node_ts."""
+    suggestions = novelty_angle_suggestions("node_ts")
+    all_text = " ".join(suggestions)
     assert "Backend" in all_text
-    assert "Testing" in all_text
-    assert "Security" in all_text
+    assert "MongoDB" in all_text
+    assert "WebSocket" in all_text
+    assert "Bundle splitting" in all_text or "bundle splitting" in all_text
+
+
+def test_novelty_angle_suggestions_get_type_helper_failure_returns_fallback() -> None:
+    """If the project-type helper itself raises, the function must still return
+    a usable list (not raise)."""
+    with patch("scripts.controller.get_type_novelty_angles", side_effect=RuntimeError("boom")):
+        suggestions = novelty_angle_suggestions()
+    assert isinstance(suggestions, list)
+    assert len(suggestions) > 0
 
 
 # ── load_kb_yaml ─────────────────────────────────────────────────────────────

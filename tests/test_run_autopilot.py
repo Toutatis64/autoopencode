@@ -3712,6 +3712,8 @@ def _make_args_for_run_cycle(
     timeout_seconds: int = 3600,
     force_parallel: int = 0,
     session_goal_file: Any = None,
+    retry_backoff_seconds: int = 1,
+    max_retry_backoff_seconds: int = 5,
 ) -> argparse.Namespace:
     return argparse.Namespace(
         max_iterations=max_iterations,
@@ -3722,6 +3724,8 @@ def _make_args_for_run_cycle(
         timeout_seconds=timeout_seconds,
         force_parallel=force_parallel,
         session_goal_file=session_goal_file,
+        retry_backoff_seconds=retry_backoff_seconds,
+        max_retry_backoff_seconds=max_retry_backoff_seconds,
         dry_run=False,
     )
 
@@ -4779,9 +4783,12 @@ def test_run_cycle_branch_transient_retry_then_succeeds(tmp_path: Path) -> None:
     ctx = RunContext(run_id="run-cycle-retry", goal_text="g", status="running", iteration_count=0)
     args = _make_args_for_run_cycle(parallel_branches=1, max_retries=3)
 
+    first_cp = _make_branch_checkpoint(status="failed", summary="transient: timeout")
+    recovered_cp = _make_branch_checkpoint(status="continue", summary="recovered")
+
     attempt_results = [
-        (1, "transient: timeout", 0, "", "", {"status": "failed", "summary": "first try"}),
-        (2, "", 0, "", "", {"status": "continue", "summary": "recovered"}),
+        (1, "", "transient: timeout", first_cp),
+        (0, "", "", recovered_cp),
     ]
 
     def fake_run_iteration(
@@ -4793,7 +4800,6 @@ def test_run_cycle_branch_transient_retry_then_succeeds(tmp_path: Path) -> None:
         attempt_number: int,
         resume_session_id: Any = None,
     ) -> tuple[int, str, str, dict[str, Any]]:
-        # Pop the next scripted result; the third (unused) call would be an error.
         return attempt_results.pop(0)  # type: ignore[return-value]
 
     sleep_calls: list[float] = []

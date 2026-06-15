@@ -4,7 +4,10 @@ import json
 import re
 from typing import Any
 
-from scripts.memory import clean_text, extract_tags, unique_preserve  # noqa: F401 — re-exported for test compatibility
+try:
+    from scripts.memory import clean_text, extract_tags, unique_preserve  # noqa: F401
+except ImportError:
+    from memory import clean_text, extract_tags, unique_preserve  # type: ignore[no-redef,noqa]
 
 CHECKPOINT_BEGIN = "AUTOPILOT_CHECKPOINT_BEGIN"
 CHECKPOINT_END = "AUTOPILOT_CHECKPOINT_END"

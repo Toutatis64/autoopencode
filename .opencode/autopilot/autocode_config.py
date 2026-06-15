@@ -85,6 +85,17 @@ TYPE_APPROACHES: dict[str, list[str]] = {
         "Documentation (architecture decisions, README)",
         "Code removal (delete dead/unused code/files)",
     ],
+    "config": [
+        "Validate config correctness (schema validation)",
+        "Improve config consistency (formatting, naming, structure)",
+        "Remove unused or redundant config values",
+        "Add documentation (README per config area, usage examples)",
+        "Security hardening (secrets detection, permissions, auditing)",
+        "Parameter tuning and optimization",
+        "Add schema definitions (JSON Schema, YAML schema)",
+        "Organize config structure (split monolithic files, logical grouping)",
+        "Add CI validation pipeline for configs",
+    ],
 }
 
 TYPE_OBJECTIVES: dict[str, list[str]] = {
@@ -144,6 +155,16 @@ TYPE_OBJECTIVES: dict[str, list[str]] = {
         "Remove dead code and unused dependencies",
         "Add logging / observability / monitoring",
     ],
+    "config": [
+        "Remove duplicate or redundant config values",
+        "Improve schema validation coverage",
+        "Add input validation (pre-commit hooks, schema checks)",
+        "Normalize config structure across files",
+        "Increase config test coverage (validation tests)",
+        "Remove unused config keys and dead references",
+        "Add validation / linting pipeline",
+        "Improve security posture (secrets detection, RBAC)",
+    ],
 }
 
 TYPE_ARCHITECTURES: dict[str, list[str]] = {
@@ -192,6 +213,77 @@ TYPE_ARCHITECTURES: dict[str, list[str]] = {
         "Error handling improvement",
         "Configuration management pattern",
         "Plugin/extensibility architecture",
+    ],
+    "config": [
+        "Config file decomposition (split monolithic files into focused files)",
+        "Schema extraction (extract inline schemas to shared schema files)",
+        "Default value rationalization (consistent defaults across configs)",
+        "Environment-specific config layering",
+        "Template-driven config generation",
+        "Include/reference mechanism for shared config blocks",
+    ],
+}
+
+TYPE_NOVELTY_ANGLES: dict[str, list[str]] = {
+    "python": [
+        "Test architecture: contract testing, property-based testing with Hypothesis, snapshot testing, or mutation testing.",
+        "Type safety: enable strict mypy flags, eliminate Any usage, add Protocol classes for structural typing, or introduce NewType for domain primitives.",
+        "Concurrency: switch CPU-bound work to multiprocessing, async I/O refactor, or asyncio.TaskGroup for structured concurrency.",
+        "Performance: profile with cProfile/py-spy, optimize hot paths with functools.lru_cache, use orjson for JSON, or introduce Cython/Numba for numerics.",
+        "Developer experience: pre-commit hooks (ruff/mypy), editable install with uv/pip, dependency groups, or rich tracebacks in dev mode.",
+        "Architecture: extract a public API in a dedicated package, split scripts/ into subpackages by domain, or introduce a settings layer (pydantic-settings).",
+        "Observability: structured logging with structlog, OpenTelemetry tracing, or Prometheus metrics for hot paths.",
+        "Resilience: tenacity retries, circuit breakers, graceful shutdown handlers, or typed exception hierarchies.",
+    ],
+    "node_ts": [
+        "Backend architecture: modular decomposition, event-driven design, CQRS, queue-based decoupling, or GraphQL federation.",
+        "Frontend innovation: server components, streaming SSR, optimistic updates, edge caching, or WebSocket real-time sync.",
+        "Database optimization: read replicas, materialized views, denormalization, TTL indexes, or MongoDB aggregation pipelines.",
+        "Testing strategy: contract testing, property-based testing, snapshot testing, visual regression, or load/stress testing.",
+        "DevOps and deployment: zero-downtime migrations, Blue/Green deploy, canary releases, or Lambda cold-start mitigation.",
+        "Security hardening: rate limiting, WAF rules, input sanitization, audit logging, or secrets rotation.",
+        "Performance optimization: Redis caching, CDN tuning, image optimization, lazy loading, or bundle splitting.",
+        "Developer experience: monorepo tooling, code generation, API documentation, or automated migration pipelines.",
+    ],
+    "rust": [
+        "Concurrency: tokio task spawning, rayon data parallelism, crossbeam channels, or async-std runtime tuning.",
+        "Performance: cargo bench, flamegraph profiling, mimalloc/jemalloc allocator swap, or SIMD intrinsics for hot paths.",
+        "Type safety: replace Box<dyn Trait> with generics, newtype wrappers for domain units, or typestate for state machines.",
+        "Architecture: split into a workspace of crates, extract a public API crate, or introduce a feature-flag matrix.",
+        "Memory: arena allocation, smallvec for small collections, or cow clone-on-write for parsing hot paths.",
+        "Tooling: cargo-nextest for parallel tests, cargo-mutants for mutation testing, or cargo-deny for license/audit.",
+        "FFI: cbindgen for C exports, pyo3/maturin for Python bindings, or wasm-bindgen for browser targets.",
+        "Error handling: thiserror/anyhow layering, error context with snafu, or structured error types for the public API.",
+    ],
+    "go": [
+        "Concurrency: errgroup fan-out, worker pools with bounded semaphore, or context cancellation trees.",
+        "Performance: pprof CPU/heap profiling, escape analysis tuning, sync.Pool for hot allocations, or generic specialization.",
+        "Type safety: replace interface{} with generics (Go 1.18+), typed constants, or sum-type patterns via sealed interfaces.",
+        "Architecture: hexagonal/clean architecture, dependency injection with wire, or cmd/internal split for binary libraries.",
+        "Testing: table-driven tests, fuzz testing (go test -fuzz), testify suites, or testcontainers for integration.",
+        "Tooling: golangci-lint with strict rule set, go vet with shadow, or staticcheck for deeper analysis.",
+        "Observability: OpenTelemetry traces/metrics, prometheus client_golang, or slog structured logging.",
+        "Resilience: circuit breakers (sony/gobreaker), retries with backoff, graceful shutdown via signal.Notify.",
+    ],
+    "generic": [
+        "Testing strategy: contract testing, property-based testing, snapshot testing, or load/stress testing.",
+        "Performance optimization: profile the hot path, replace hot allocations, introduce caching, or use a faster parser.",
+        "Architecture: extract a shared module, split a monolithic file, or introduce a plugin/extension point.",
+        "Security hardening: input validation, rate limiting, audit logging, or secrets rotation policy.",
+        "Developer experience: pre-commit hooks, dependency grouping, generated docs, or migration scripts.",
+        "Resilience: retry with backoff, circuit breakers, graceful shutdown, or typed exception hierarchy.",
+        "Observability: structured logging, tracing, or metrics on hot paths.",
+        "Type safety: replace dynamic types with strict types, add validation, or introduce domain primitives.",
+    ],
+    "config": [
+        "Config validation: add schemas (JSON Schema, KCL, Cue), run validation in CI, or use conftest/OPA policies.",
+        "Secrets management: detect hardcoded secrets, migrate to vault/secret-store references, or add audit logging.",
+        "Idempotency: ensure configs are safe to re-apply (no drift, no side-effects on re-apply).",
+        "Parameter tuning: review and adjust numerical parameters (timeouts, limits, weights) based on observed behavior.",
+        "Diff hygiene: reduce noisy diffs via consistent formatting, sorted keys, and trailing-whitespace removal.",
+        "Environment parity: detect config drift between dev/staging/prod, or template for environment-specific values.",
+        "Security posture: review RBAC permissions, network policies, and resource limits against least-privilege principle.",
+        "Documentation generation: auto-generate README tables, schema docs, or dependency diagrams from config.",
     ],
 }
 
@@ -329,6 +421,44 @@ PRESETS: dict[str, dict[str, Any]] = {
             },
         ],
     },
+    "config": {
+        "validation": {
+            "default": "yamllint .",
+            "typecheck": "prettier --check .",
+            "lint": "yamllint .",
+            "build": "echo 'Config-only project — no build needed'",
+            "test_one": "yamllint",
+            "test_all": "yamllint .",
+            "full": "yamllint . && prettier --check .",
+        },
+        "modules": [
+            {
+                "name": "configs",
+                "description": "Configuration files (YAML, JSON, TOML, etc.)",
+                "keywords": ["config", "yaml", "json", "toml", "ini", "hcl"],
+            },
+            {
+                "name": "schemas",
+                "description": "Schema definitions for config validation",
+                "keywords": ["schema", "jsonschema", "validation", "spec"],
+            },
+            {
+                "name": "ci",
+                "description": "CI/CD pipeline configs",
+                "keywords": ["ci", "cd", "pipeline", "action", "workflow"],
+            },
+            {
+                "name": "docs",
+                "description": "Documentation and usage guides",
+                "keywords": ["doc", "readme", "guide", "example"],
+            },
+            {
+                "name": "templates",
+                "description": "Config templates and scaffolding",
+                "keywords": ["template", "scaffold", "example", "sample"],
+            },
+        ],
+    },
 }
 
 
@@ -355,6 +485,15 @@ BASE_DEFAULTS: dict[str, Any] = {
         "goal_file": ".opencode/autopilot/goal.md",
         "runtime_dir": ".opencode/autopilot/runtime",
         "components_dir": ".opencode/autopilot/components",
+    },
+    "project_goals": {
+        "description": "Improve the codebase continuously across all areas.",
+        "principles": [
+            "Improve quality, coverage, performance, and architecture",
+            "Add tests for uncovered code",
+            "Fix bugs with regression tests",
+            "Reduce duplication and technical debt",
+        ],
     },
     "conventions": [
         "Tests for every fix: regression test that fails before the fix",
@@ -499,6 +638,12 @@ def get_project_type(config: dict | None = None) -> str:
     return pt if pt in PRESETS else "generic"
 
 
+def get_project_goals(config: dict | None = None) -> dict:
+    if config is None:
+        config = load_config()
+    return config.get("project_goals", BASE_DEFAULTS["project_goals"])
+
+
 _MODULES_CACHE: list[dict] | None = None
 
 
@@ -552,6 +697,19 @@ def get_type_architectures(pt: str | None = None) -> list[str]:
     if pt is None:
         pt = get_project_type()
     return list(TYPE_ARCHITECTURES.get(pt, TYPE_ARCHITECTURES["generic"]))
+
+
+def get_type_novelty_angles(pt: str | None = None) -> list[str]:
+    """Return novelty-angle suggestions for the given project type (or current project).
+
+    These are surfaced when the loop is stuck (low diversity, exhausted families) and
+    the controller is asking for a fresh angle. The list is project-type-aware so
+    Python repos do not get told to 'optimize bundle splitting' or 'add WebSocket
+    real-time sync'.
+    """
+    if pt is None:
+        pt = get_project_type()
+    return list(TYPE_NOVELTY_ANGLES.get(pt, TYPE_NOVELTY_ANGLES["generic"]))
 
 
 def reload() -> None:

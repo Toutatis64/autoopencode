@@ -1175,16 +1175,31 @@ class HierarchyLevel:
         """Return stagnation score (0.0–1.0) for this level.
 
         Based on:
-        - Consecutive failed or inconclusive experiments
-        - Components stuck in exhausted state
-        - No new variants created recently
+        - Failed/reverted/inconclusive experiment ratio (weight: 0.5)
+        - Components stuck in exhausted state (weight: 0.3)
+        - No new variants created recently (weight: 0.2)
         """
         experiments = self.registry.list_experiments()
-        recent = [e for e in experiments if e.is_complete][:12]
+        recent = experiments[:12]
         if not recent:
             return 0.0
-        failed = sum(1 for e in recent if e.status in ("failed", "reverted"))
-        return min(1.0, failed / max(len(recent), 1))
+
+        # Dimension 1: failed, reverted, or inconclusive (tie) experiments
+        stale = sum(
+            1 for e in recent
+            if e.status in ("failed", "reverted")
+            or (e.status == "completed" and e.result and e.result.winner == "tie")
+        )
+        failure_score = stale / len(recent)
+
+        # Dimension 2: exhausted components
+        comps = self.registry.list_components(scope=self.scope)
+        exhausted_rate = sum(1 for c in comps if c.exhausted) / max(len(comps), 1)
+
+        # Dimension 3: components with only the initial variant (no exploration)
+        stale_rate = sum(1 for c in comps if c.variant_count <= 1) / max(len(comps), 1)
+
+        return min(1.0, failure_score * 0.5 + exhausted_rate * 0.3 + stale_rate * 0.2)
 
     def summary(self) -> dict[str, Any]:
         """Return a machine-readable summary of this level's state."""
@@ -1354,7 +1369,12 @@ class MetaController:
                     discovered.extend(hl.discover_components())
         return discovered
 
-    def run_cycle(self, level: int, metrics: dict[str, float] | None = None) -> dict[str, Any]:
+    def run_cycle(
+        self,
+        level: int,
+        metrics: dict[str, float] | None = None,
+        dry_run: bool = False,
+    ) -> dict[str, Any]:
         """Execute one improvement cycle at the given level.
 
         1. Check for running experiments → advance them
@@ -1362,10 +1382,27 @@ class MetaController:
         3. Find experiment candidates → start new experiments
         4. Check stagnation → auto-escalate if stuck
         5. Return cycle summary
+
+        When ``dry_run=True`` the cycle is simulated end-to-end: every
+        mutation is skipped, but a ``would_do`` audit trail of the
+        actions that *would* have been taken is included in the result
+        and ``dry_run: True`` is set. This lets operators preview
+        what a meta-controller cycle would do before letting it act
+        on the registry.
         """
         hl = self.get_or_create_level(level)
         scope_name = hl.scope
-        _log(f"Cycle start | level={level} scope={scope_name}")
+        _log(f"Cycle start | level={level} scope={scope_name} dry_run={dry_run}")
+
+        would_do: list[dict[str, Any]] = []
+
+        def _gate(action: str, payload: dict[str, Any], fn):
+            """Run ``fn`` unless ``dry_run``; always record the action."""
+            would_do.append({"action": action, **payload})
+            if dry_run:
+                _log(f"  [dry-run] would {action}: {payload}")
+                return None
+            return fn()
 
         # Step 1: Advance running experiments
         running = self.registry.list_experiments(status="running")
@@ -1378,7 +1415,16 @@ class MetaController:
                 f"control={exp.control_version} vs treatment={exp.treatment_version} "
                 f"({exp.current_iteration}/{exp.eval_iterations})"
             )
-            hl.advance_experiment(exp)
+            _gate(
+                "advance_experiment",
+                {
+                    "experiment_id": exp.experiment_id,
+                    "ref": str(exp.ref),
+                    "current_iteration": exp.current_iteration,
+                    "eval_iterations": exp.eval_iterations,
+                },
+                lambda: hl.advance_experiment(exp),
+            )
 
         # Step 2: Record auto-derived cycle metrics for experiment evaluation
         cycle_metrics = self._derive_cycle_metrics(level)
@@ -1402,14 +1448,23 @@ class MetaController:
             active = self.registry.load_active_variant(ref)
             if active:
                 it = ref_iter_map.get(str(ref), 1)
-                hl.registry.record_performance(
-                    ComponentPerformance(
-                        ref=ref,
-                        version=active.version,
-                        start_iteration=it - 1,
-                        end_iteration=it,
-                        metrics=cycle_metrics,
-                    )
+                _gate(
+                    "record_performance",
+                    {
+                        "ref": str(ref),
+                        "version": active.version,
+                        "start_iteration": it - 1,
+                        "end_iteration": it,
+                    },
+                    lambda r=ref, v=active.version, s=it - 1, e=it: hl.registry.record_performance(
+                        ComponentPerformance(
+                            ref=r,
+                            version=v,
+                            start_iteration=s,
+                            end_iteration=e,
+                            metrics=cycle_metrics,
+                        )
+                    ),
                 )
                 recorded.add((str(ref), active.version))
                 _log(f"  Recorded performance: {ref} version={active.version} iter={it}")
@@ -1421,14 +1476,24 @@ class MetaController:
             treatment = self.registry.load_variant(exp.ref, exp.treatment_version)
             if treatment and (str(exp.ref), exp.treatment_version) not in recorded:
                 it = exp.current_iteration
-                hl.registry.record_performance(
-                    ComponentPerformance(
-                        ref=exp.ref,
-                        version=exp.treatment_version,
-                        start_iteration=it - 1,
-                        end_iteration=it,
-                        metrics=cycle_metrics,
-                    )
+                _gate(
+                    "record_performance",
+                    {
+                        "ref": str(exp.ref),
+                        "version": exp.treatment_version,
+                        "start_iteration": it - 1,
+                        "end_iteration": it,
+                        "treatment": True,
+                    },
+                    lambda r=exp.ref, v=exp.treatment_version, s=it - 1, e=it: hl.registry.record_performance(
+                        ComponentPerformance(
+                            ref=r,
+                            version=v,
+                            start_iteration=s,
+                            end_iteration=e,
+                            metrics=cycle_metrics,
+                        )
+                    ),
                 )
                 _log(f"  Recorded treatment performance: {exp.ref} version={exp.treatment_version} iter={it}")
 
@@ -1440,7 +1505,11 @@ class MetaController:
             if started >= hl.config.max_experiments_per_cycle:
                 _log(f"  Max experiments per cycle ({hl.config.max_experiments_per_cycle}) reached, stopping")
                 break
-            started_exp = hl.start_experiment(ref, treatment.version)
+            started_exp = _gate(
+                "start_experiment",
+                {"ref": str(ref), "treatment_version": treatment.version},
+                lambda r=ref, t=treatment.version: hl.start_experiment(r, t),
+            )
             if started_exp is not None:
                 started += 1
                 _log(
@@ -1468,6 +1537,7 @@ class MetaController:
                 "meta_ref": str(meta_ref),
                 "reason": f"Level {level} stagnation score {stagnation:.2f} exceeds 0.7 threshold",
             }
+            would_do.append({"action": "escalate", **escalation})
             _log(f"  ⚠ ESCALATION: {escalation['reason']} — promoting to level {meta_level}")
 
         result = {
@@ -1479,10 +1549,14 @@ class MetaController:
             "deploy_drift": self.check_deploy_drift(),
             **escalation,
         }
+        if dry_run:
+            result["dry_run"] = True
+            result["would_do"] = would_do
         _log(
             f"Cycle complete | level={level} | advanced={len(running_at_level)} started={started} "
             f"stagnation={stagnation:.3f} escalated={escalation['escalated']} "
             f"drift={result['deploy_drift'].get('drift_count', 'n/a')}"
+            f"{' [DRY-RUN]' if dry_run else ''}"
         )
         return result
 
@@ -1624,6 +1698,11 @@ def main() -> int:
     cycle = sub.add_parser("cycle", help="Run one improvement cycle")
     cycle.add_argument("--level", type=int, default=1, help="Hierarchy level")
     cycle.add_argument("--metrics", type=str, help="JSON metrics dict")
+    cycle.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Simulate the cycle without mutating the registry; return a would_do audit trail",
+    )
 
     args = parser.parse_args()
 
@@ -1644,7 +1723,7 @@ def main() -> int:
         return 0
     elif args.command == "cycle":
         metrics = json.loads(args.metrics) if args.metrics else None
-        result = ctrl.run_cycle(args.level, metrics)
+        result = ctrl.run_cycle(args.level, metrics, dry_run=args.dry_run)
         print(json.dumps(result, indent=2))
         return 0
     else:

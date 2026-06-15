@@ -20,29 +20,21 @@ from pathlib import Path
 from typing import Any
 import yaml
 
-# Ensure this directory is on sys.path for sibling module imports
-_D = Path(__file__).resolve().parent
-if str(_D) not in sys.path:
-    sys.path.insert(0, str(_D))
+# Shared bootstrap: the canonical source tree at `scripts/` is not on
+# sys.path when this file lives at .opencode/autopilot/run_autopilot.py
+# (the deploy mirror). The launcher module walks up to find
+# scripts/autocode_config.py and prepends the repo root to sys.path so
+# the `from scripts.X import ...` lookups below succeed without a
+# PYTHONPATH or launcher-script env. When the canonical source tree is
+# available we import as `scripts.launcher`; otherwise we fall back to
+# the sibling deploy-mirror copy.
+try:
+    from scripts.launcher import bootstrap  # noqa: E402
+except ImportError:
+    from launcher import bootstrap  # type: ignore[no-redef,noqa]
 
 
-# When this file lives at .opencode/autopilot/run_autopilot.py (the deploy
-# mirror), the canonical source tree at `scripts/` is not on sys.path, so
-# `from scripts.X import ...` below would fail. Detect the repo root by
-# walking up to the directory that contains `scripts/autocode_config.py`
-# and prepend it. This makes the deploy copy self-bootstrappable — no
-# PYTHONPATH or launcher-script env needed.
-def _ensure_repo_root_on_path() -> None:
-    marker = Path("scripts") / "autocode_config.py"
-    here = Path(__file__).resolve().parent
-    for cand in (here, *here.parents):
-        if (cand / marker).is_file():
-            if str(cand) not in sys.path:
-                sys.path.insert(0, str(cand))
-            return
-
-
-_ensure_repo_root_on_path()
+bootstrap()
 
 try:
     from scripts.autocode_config import ROOT, load_config, get_path, get_validation

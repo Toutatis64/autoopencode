@@ -9,9 +9,20 @@ from typing import Any
 
 import yaml
 
-from scripts.autocode_config import ROOT
-from scripts.checkpoint import checkpoint_text, normalize_checkpoint
-from scripts.memory import _log, clean_text, compact_summary
+try:
+    from scripts.autocode_config import ROOT, get_type_novelty_angles
+except ImportError:
+    from autocode_config import ROOT, get_type_novelty_angles  # type: ignore[no-redef]
+
+try:
+    from scripts.checkpoint import checkpoint_text, normalize_checkpoint
+except ImportError:
+    from checkpoint import checkpoint_text, normalize_checkpoint  # type: ignore[no-redef]
+
+try:
+    from scripts.memory import _log, clean_text, compact_summary
+except ImportError:
+    from memory import _log, clean_text, compact_summary  # type: ignore[no-redef]
 
 CONTROLLER_EXHAUST_FAMILY_AFTER = 3
 CONTROLLER_HARD_PIVOT_AFTER = 5
@@ -133,17 +144,27 @@ def recent_family_diversity(entries: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def novelty_angle_suggestions() -> list[str]:
-    return [
-        "Backend architecture: modular decomposition, event-driven design, CQRS, queue-based decoupling, or GraphQL federation.",
-        "Frontend innovation: server components, streaming SSR, optimistic updates, edge caching, or WebSocket real-time sync.",
-        "Database optimization: read replicas, materialized views, denormalization, TTL indexes, or MongoDB aggregation pipelines.",
-        "Testing strategy: contract testing, property-based testing, snapshot testing, visual regression, or load/stress testing.",
-        "DevOps and deployment: zero-downtime migrations, Blue/Green deploy, canary releases, or Lambda cold-start mitigation.",
-        "Security hardening: rate limiting, WAF rules, input sanitization, audit logging, or secrets rotation.",
-        "Performance optimization: Redis caching, CDN tuning, image optimization, lazy loading, or bundle splitting.",
-        "Developer experience: monorepo tooling, code generation, API documentation, or automated migration pipelines.",
-    ]
+def novelty_angle_suggestions(pt: str | None = None) -> list[str]:
+    """Return project-type-aware novelty angles (Python, Rust, Go, etc.).
+
+    Delegates to ``get_type_novelty_angles`` so suggestions match the project
+    actually being improved (e.g. a Python repo does not get told to optimize
+    Redis caching or bundle splitting). Falls back to generic angles if the
+    project type is unknown or the helper raises.
+    """
+    try:
+        return get_type_novelty_angles(pt)
+    except Exception:
+        return [
+            "Testing strategy: contract testing, property-based testing, snapshot testing, or load/stress testing.",
+            "Performance optimization: profile the hot path, replace hot allocations, introduce caching, or use a faster parser.",
+            "Architecture: extract a shared module, split a monolithic file, or introduce a plugin/extension point.",
+            "Security hardening: input validation, rate limiting, audit logging, or secrets rotation policy.",
+            "Developer experience: pre-commit hooks, dependency grouping, generated docs, or migration scripts.",
+            "Resilience: retry with backoff, circuit breakers, graceful shutdown, or typed exception hierarchy.",
+            "Observability: structured logging, tracing, or metrics on hot paths.",
+            "Type safety: replace dynamic types with strict types, add validation, or introduce domain primitives.",
+        ]
 
 
 def load_kb_yaml() -> dict[str, Any]:

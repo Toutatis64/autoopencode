@@ -1,4 +1,4 @@
-# Autocode — Setup Guide
+# OpenAutopilot — Setup Guide
 
 ## Prerequisites
 
@@ -39,6 +39,10 @@ The autopilot classifies each iteration into one of these families.
 ### Step 5: Conventions
 Non-negotiable rules the autopilot must follow (one per line, empty line to finish).
 
+### Step 6: Project goals
+High-level direction for the autopilot loop (persistent across sessions).
+Describe what your project aims to achieve and the principles to follow.
+
 ## Post-installation
 
 ### 1. Review `autocode.yaml`
@@ -58,10 +62,11 @@ modules:               # ← branch families
     keywords: ["test", "pytest"]
 ```
 
-### 2. Edit the goal
+### 2. Edit project goals (optional)
 
 ```bash
-# Edit .opencode/autopilot/goal.md to your specific improvement goal
+# Edit autocode.yaml → project_goals to set the persistent direction
+# Or edit .opencode/autopilot/goal.md for a session-specific override
 ```
 
 ### 3. Run the autopilot
@@ -148,7 +153,7 @@ pip install pyyaml
 
 ### "No active run recorded"
 
-Create a goal file first:
+Project-level goals from `autocode.yaml` are used by default.
 ```bash
-# Edit .opencode/autopilot/goal.md to describe your improvement goal
+# Edit autocode.yaml → project_goals to set the persistent direction
 ```

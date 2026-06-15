@@ -1,5 +1,5 @@
-# Autocode
-Autonomous improvement code builder
+# OpenAutopilot
+The autopilot for opencode
 
 ## Core rules
 - Smallest correct change. Tests for every fix.
@@ -15,7 +15,7 @@ Autonomous improvement code builder
 - Agent `goal-autopilot` for bounded-iteration autonomous work
 - Agent `goal-meta-autopilot` to improve the autopilot itself
 - Launchers: `./run_autopilot.sh` · `./run_meta_autopilot.sh`
-- KB: `knowledge/autopilot_kb.yaml` · Goal: `.opencode/autopilot/goal.md`
+- KB: `knowledge/autopilot_kb.yaml` · Goals: `autocode.yaml` → `project_goals`
 
 ## Dashboard
 - View autopilot KPIs: `python3 .opencode/autopilot/kpi.py`

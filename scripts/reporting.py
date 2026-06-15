@@ -10,10 +10,25 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from scripts.run_autopilot import RunContext
 
-from scripts.autocode_config import ROOT
-from scripts.checkpoint import normalize_checkpoint
-from scripts.controller import load_kb_yaml
-from scripts.memory import compact_summary, utc_now
+try:
+    from scripts.autocode_config import ROOT
+except ImportError:
+    from autocode_config import ROOT  # type: ignore[no-redef]
+
+try:
+    from scripts.checkpoint import normalize_checkpoint
+except ImportError:
+    from checkpoint import normalize_checkpoint  # type: ignore[no-redef]
+
+try:
+    from scripts.controller import load_kb_yaml
+except ImportError:
+    from controller import load_kb_yaml  # type: ignore[no-redef]
+
+try:
+    from scripts.memory import compact_summary, utc_now
+except ImportError:
+    from memory import compact_summary, utc_now  # type: ignore[no-redef]
 
 
 def render_report(conn: sqlite3.Connection, ctx: RunContext) -> str:

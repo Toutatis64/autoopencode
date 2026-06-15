@@ -1,20 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-GOAL_FILE=".opencode/autopilot/goal.md"
 MAX_ITERATIONS="${1:-200}"
 SLEEP_SECONDS="${2:-60}"
-
-if [ ! -f "$GOAL_FILE" ]; then
-    echo "ERROR: Goal file not found at $GOAL_FILE"
-    echo "Create it: cp .opencode/autopilot/goal.template.md $GOAL_FILE"
-    exit 1
-fi
+SESSION_GOAL_FILE=".opencode/autopilot/goal.md"
 
 echo "═══ Autopilot — Autocode ═══"
-echo "  Goal: $GOAL_FILE | Max: $MAX_ITERATIONS | Sleep: ${SLEEP_SECONDS}s"
+echo "  Project goals from autocode.yaml | Max: $MAX_ITERATIONS | Sleep: ${SLEEP_SECONDS}s"
 
-python3 .opencode/autopilot/run_autopilot.py \
-    --goal-file "$GOAL_FILE" \
-    --max-iterations "$MAX_ITERATIONS" \
+ARGS=(
+    --max-iterations "$MAX_ITERATIONS"
     --sleep-seconds "$SLEEP_SECONDS"
+)
+
+if [ -f "$SESSION_GOAL_FILE" ] && [ -s "$SESSION_GOAL_FILE" ]; then
+    echo "  Session goal: $SESSION_GOAL_FILE"
+    ARGS+=(--session-goal-file "$SESSION_GOAL_FILE")
+fi
+
+python3 .opencode/autopilot/run_autopilot.py "${ARGS[@]}"

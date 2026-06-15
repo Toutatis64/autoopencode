@@ -1560,6 +1560,137 @@ class TestMetaController:
         assert result["deploy_drift"]["modified"] == 1
         reg.close()
 
+    def test_run_cycle_dry_run_empty_level(self) -> None:
+        """dry_run on a level with no components returns dry_run=True with empty would_do."""
+        reg = self._make_reg()
+        mc = MetaController(registry=reg)
+        mc.get_or_create_level(0)
+        with patch("scripts.meta_autopilot.detect_drift", return_value=[]):
+            result = mc.run_cycle(0, dry_run=True)
+        assert result["dry_run"] is True
+        assert "would_do" in result
+        assert result["would_do"] == []
+        assert result["escalated"] is False
+        reg.close()
+
+    def test_run_cycle_dry_run_does_not_persist(self) -> None:
+        """dry_run must not create any experiment or performance record."""
+        reg = self._make_reg()
+        mc = MetaController(registry=reg)
+        mc.get_or_create_level(0)
+        ref = ComponentRef(scope="autopilot", component_type="prompt", name="dry-test")
+        reg.register_component(ref, initial_content={"param": 0.5})
+        treatment = mc.levels[0].create_variant(ref, MutationType.PARAMETER_PERTURB)
+        assert treatment is not None
+
+        experiments_before = reg.list_experiments()
+        perfs_before = reg.get_performance(ref, treatment.version, limit=100)
+
+        with patch("scripts.meta_autopilot.detect_drift", return_value=[]):
+            result = mc.run_cycle(0, dry_run=True)
+
+        assert result["dry_run"] is True
+        # The cycle would have started 1 experiment
+        started_actions = [a for a in result["would_do"] if a["action"] == "start_experiment"]
+        assert len(started_actions) == 1
+        assert started_actions[0]["ref"] == str(ref)
+        assert started_actions[0]["treatment_version"] == treatment.version
+
+        # But the DB is unchanged
+        assert reg.list_experiments() == experiments_before
+        assert reg.get_performance(ref, treatment.version, limit=100) == perfs_before
+        reg.close()
+
+    def test_run_cycle_dry_run_audits_running_experiment_advance(self) -> None:
+        """dry_run records would-advance for a running experiment without mutating it."""
+        reg = self._make_reg()
+        mc = MetaController(registry=reg)
+        mc.get_or_create_level(0)
+        ref = ComponentRef(scope="autopilot", component_type="prompt", name="advance-test")
+        reg.register_component(ref, initial_content={"x": 1.0})
+        treatment = mc.levels[0].create_variant(ref, MutationType.PARAMETER_PERTURB)
+        assert treatment is not None
+        exp = mc.levels[0].start_experiment(ref, treatment.version)
+        assert exp is not None
+        assert exp.current_iteration == 0
+
+        with patch("scripts.meta_autopilot.detect_drift", return_value=[]):
+            result = mc.run_cycle(0, dry_run=True)
+
+        assert result["dry_run"] is True
+        advance_actions = [a for a in result["would_do"] if a["action"] == "advance_experiment"]
+        assert len(advance_actions) == 1
+        assert advance_actions[0]["experiment_id"] == exp.experiment_id
+        assert advance_actions[0]["current_iteration"] == 0
+
+        # The experiment in the DB is untouched
+        running = reg.list_experiments(ref, status="running")
+        assert len(running) == 1
+        assert running[0].current_iteration == 0
+        reg.close()
+
+    def test_run_cycle_dry_run_audits_record_performance(self) -> None:
+        """dry_run reports would record_performance for the active variant."""
+        reg = self._make_reg()
+        mc = MetaController(registry=reg)
+        mc.get_or_create_level(0)
+        ref = ComponentRef(scope="autopilot", component_type="prompt", name="perf-test")
+        reg.register_component(ref, initial_content={"x": 1.0})
+
+        with patch("scripts.meta_autopilot.detect_drift", return_value=[]):
+            result = mc.run_cycle(0, dry_run=True)
+
+        assert result["dry_run"] is True
+        perf_actions = [a for a in result["would_do"] if a["action"] == "record_performance"]
+        assert len(perf_actions) >= 1
+        assert perf_actions[0]["ref"] == str(ref)
+        # No performance rows actually inserted
+        assert reg.get_performance(ref, perf_actions[0]["version"], limit=10) == []
+        reg.close()
+
+    def test_run_cycle_dry_run_audits_escalation(self) -> None:
+        """dry_run surfaces would-escalate when stagnation crosses threshold."""
+        reg = self._make_reg()
+        mc = MetaController(registry=reg)
+        mc.get_or_create_level(0)
+        with patch("scripts.meta_autopilot.detect_drift", return_value=[]):
+            with patch.object(HierarchyLevel, "detect_stagnation", return_value=0.85):
+                result = mc.run_cycle(0, dry_run=True)
+        assert result["dry_run"] is True
+        assert result["escalated"] is True
+        escalate_actions = [a for a in result["would_do"] if a["action"] == "escalate"]
+        assert len(escalate_actions) == 1
+        assert escalate_actions[0]["meta_level"] == 1
+        assert escalate_actions[0]["meta_ref"].endswith("level-0-controller")
+        reg.close()
+
+    def test_run_cycle_dry_run_does_not_promote_active(self) -> None:
+        """dry_run must not change the active version of any component."""
+        reg = self._make_reg()
+        mc = MetaController(registry=reg)
+        mc.get_or_create_level(0)
+        ref = ComponentRef(scope="autopilot", component_type="prompt", name="promote-test")
+        reg.register_component(ref, initial_content={"x": 1.0})
+        original_active = reg.get_component_status(ref).active_version
+        assert original_active is not None
+
+        with patch("scripts.meta_autopilot.detect_drift", return_value=[]):
+            mc.run_cycle(0, dry_run=True)
+
+        assert reg.get_component_status(ref).active_version == original_active
+        reg.close()
+
+    def test_run_cycle_non_dry_run_omits_dry_run_field(self) -> None:
+        """A non-dry-run cycle result does not include dry_run or would_do keys."""
+        reg = self._make_reg()
+        mc = MetaController(registry=reg)
+        mc.get_or_create_level(0)
+        with patch("scripts.meta_autopilot.detect_drift", return_value=[]):
+            result = mc.run_cycle(0)
+        assert "dry_run" not in result
+        assert "would_do" not in result
+        reg.close()
+
 
 class TestLoadFileContent:
     def test_load_yaml(self) -> None:

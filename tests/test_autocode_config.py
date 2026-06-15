@@ -18,6 +18,7 @@ from scripts.autocode_config import (
     get_project_type,
     get_type_approaches,
     get_type_architectures,
+    get_type_novelty_angles,
     get_type_objectives,
     get_validation,
     load_config,
@@ -340,6 +341,69 @@ def test_get_type_architectures_default() -> None:
     archs = get_type_architectures()
     assert isinstance(archs, list)
     assert len(archs) > 0
+
+
+def test_get_type_novelty_angles_default() -> None:
+    angles = get_type_novelty_angles()
+    assert isinstance(angles, list)
+    assert len(angles) >= 4
+    assert all(isinstance(a, str) and len(a) > 0 for a in angles)
+
+
+def test_get_type_novelty_angles_python_omits_node_topics() -> None:
+    """The Python preset must not surface Node/React/MongoDB boilerplate."""
+    angles = get_type_novelty_angles("python")
+    text = " ".join(angles).lower()
+    assert "mongodb" not in text
+    assert "websocket" not in text
+    assert "bundle splitting" not in text
+    assert "graphql federation" not in text
+    assert "lambda cold-start" not in text
+
+
+def test_get_type_novelty_angles_python_contains_python_relevant_topics() -> None:
+    angles = get_type_novelty_angles("python")
+    text = " ".join(angles).lower()
+    assert "mypy" in text or "pytest" in text or "asyncio" in text or "structlog" in text
+
+
+def test_get_type_novelty_angles_node_ts_keeps_legacy_suggestions() -> None:
+    """Regression: the original Node/React-flavoured suggestions are still the
+    default for node_ts projects (this was the only list before iter 4)."""
+    angles = get_type_novelty_angles("node_ts")
+    text = " ".join(angles).lower()
+    assert "backend" in text
+    assert "mongodb" in text
+    assert "websocket" in text
+
+
+def test_get_type_novelty_angles_rust_surfaces_rust_specific_topics() -> None:
+    angles = get_type_novelty_angles("rust")
+    text = " ".join(angles).lower()
+    assert "tokio" in text or "cargo" in text or "rayon" in text or "rust" in text
+
+
+def test_get_type_novelty_angles_go_surfaces_go_specific_topics() -> None:
+    angles = get_type_novelty_angles("go")
+    text = " ".join(angles).lower()
+    assert "errgroup" in text or "context cancellation" in text or "pprof" in text or "go " in text
+
+
+def test_get_type_novelty_angles_unknown_type_falls_back_to_generic() -> None:
+    angles = get_type_novelty_angles("nonexistent_type")
+    generic = get_type_novelty_angles("generic")
+    assert angles == generic
+
+
+def test_get_type_novelty_angles_returns_independent_copies() -> None:
+    """Two calls must return equal-but-distinct lists so callers can mutate one
+    without affecting the preset."""
+    a = get_type_novelty_angles("python")
+    b = get_type_novelty_angles("python")
+    assert a == b
+    assert a is not b
+    a.append("mutation")
+    assert "mutation" not in get_type_novelty_angles("python")
 
 
 def test_get_path_default() -> None:
