@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Autocode config loader — reads autocode.yaml from the project root.
+AutoOpencode config loader — reads autocode.yaml from the project root.
 
 All Python scripts import this instead of hardcoding paths or domain values.
 Supports multiple project types (python, node_ts, rust, go, generic) with

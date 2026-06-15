@@ -1,4 +1,4 @@
-# OpenAutopilot
+# AutoOpencode
 The autopilot for opencode
 
 ## Core rules

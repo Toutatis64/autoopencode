@@ -1,4 +1,4 @@
-"""Memory subsystem for Autocode — persistent RAG-style memory with SQLite+FTS5."""
+"""Memory subsystem for AutoOpencode — persistent RAG-style memory with SQLite+FTS5."""
 
 from __future__ import annotations
 

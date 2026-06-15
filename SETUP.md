@@ -1,4 +1,4 @@
-# OpenAutopilot — Setup Guide
+# AutoOpencode — Setup Guide
 
 ## Prerequisites
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Autocode KPI Dashboard — analyze autopilot runs and generate HTML reports.
+AutoOpencode KPI Dashboard — analyze autopilot runs and generate HTML reports.
 
 Reads from:
   - .opencode/autopilot/runtime/memory.sqlite3 (iteration data)
@@ -368,7 +368,7 @@ def generate_dashboard(metrics: list[dict[str, Any]], kb: dict[str, Any], meta_k
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Autocode Dashboard</title>
+<title>AutoOpencode Dashboard</title>
 <style>
   * {{ margin:0; padding:0; box-sizing:border-box }}
   body {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f3f4f6; color:#111827; padding:24px }}
@@ -381,7 +381,7 @@ def generate_dashboard(metrics: list[dict[str, Any]], kb: dict[str, Any], meta_k
 </head>
 <body>
 <div class="header">
-  <h1>📊 Autocode Dashboard</h1>
+  <h1>📊 AutoOpencode Dashboard</h1>
   <p style="color:#6b7280;font-size:14px">
     Generated {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")}
     · {total_runs} run(s) · {total_iters} iteration(s) · {total_wins} win(s)
@@ -416,7 +416,7 @@ def generate_dashboard(metrics: list[dict[str, Any]], kb: dict[str, Any], meta_k
 </div>
 
 <div class="stale">
-  Autocode · <a href="https://github.com/org/autocode" style="color:#3b82f6">github.com/org/autocode</a>
+  AutoOpencode · <a href="https://github.com/Toutatis64/autoopencode" style="color:#3b82f6">github.com/Toutatis64/autoopencode</a>
 </div>
 </body>
 </html>"""

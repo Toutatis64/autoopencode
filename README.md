@@ -1,6 +1,6 @@
-# OpenAutopilot — the autopilot for opencode
+# AutoOpencode
 
-OpenAutopilot is a drop-in autonomous improvement loop for any repository.
+AutoOpencode is a drop-in autonomous improvement loop for any repository.
 It turns an opencode agent into a self-improving, long-running worker
 that identifies improvements, implements them, validates them, and
 records results — then starts the next iteration.
@@ -186,4 +186,4 @@ that can be versioned, mutated, and A/B tested:
 2. **Everyone** runs the autopilot on demand
 3. **The meta-autopilot** improves prompts and parameters automatically
 4. **KPIs** show whether the codebase is actually improving over time
-5. **Share improvements**: PR to the openautopilot repo benefits all teams
+5. **Share improvements**: PR to the autoopencode repo benefits all teams

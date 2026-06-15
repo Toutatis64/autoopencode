@@ -189,7 +189,7 @@ def test_get_validation_build() -> None:
 
 def test_get_project_name_default() -> None:
     name = get_project_name()
-    assert name == "Autocode"
+    assert name == "AutoOpencode"
 
 
 def test_get_project_name_with_config() -> None:

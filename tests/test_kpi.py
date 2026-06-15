@@ -501,7 +501,7 @@ def test_generate_dashboard_basic() -> None:
     kb = _sample_kb()
     html = generate_dashboard(metrics, kb, {})
     assert "<!DOCTYPE html>" in html
-    assert "Autocode Dashboard" in html
+    assert "AutoOpencode Dashboard" in html
     assert "1 run(s)" in html
     assert "3 iteration(s)" in html
     assert "2 win(s)" in html
@@ -718,4 +718,4 @@ def test_main_with_data(tmp_path: Path, capsys) -> None:
     html_files = list(tmp_path.glob("dashboard_*.html"))
     assert len(html_files) == 1
     html = html_files[0].read_text(encoding="utf-8")
-    assert "Autocode Dashboard" in html
+    assert "AutoOpencode Dashboard" in html
