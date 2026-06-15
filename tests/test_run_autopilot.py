@@ -23,8 +23,8 @@ from scripts.checkpoint import (
     normalize_checkpoint,
     normalize_string_list,
     strip_ansi,
-    unique_preserve,
 )
+from scripts.memory import unique_preserve
 from scripts.controller import (
     checkpoint_signals_goal_complete,
     classify_transient_failure,

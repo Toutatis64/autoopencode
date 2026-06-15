@@ -5,9 +5,9 @@ import re
 from typing import Any
 
 try:
-    from scripts.memory import clean_text, extract_tags, unique_preserve  # noqa: F401
+    from scripts.memory import clean_text  # noqa: F401
 except ImportError:
-    from memory import clean_text, extract_tags, unique_preserve  # type: ignore[no-redef,noqa]
+    from memory import clean_text  # type: ignore[no-redef]
 
 CHECKPOINT_BEGIN = "AUTOPILOT_CHECKPOINT_BEGIN"
 CHECKPOINT_END = "AUTOPILOT_CHECKPOINT_END"

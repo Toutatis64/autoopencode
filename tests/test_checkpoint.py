@@ -14,8 +14,8 @@ from scripts.checkpoint import (
     normalize_checkpoint,
     normalize_string_list,
     strip_ansi,
-    unique_preserve,
 )
+from scripts.memory import unique_preserve
 
 
 def test_strip_ansi_strips_sgr_codes() -> None:
@@ -601,7 +601,7 @@ def test_infer_promotion_recommendation_non_promising() -> None:
 
 
 def test_extract_tags_basic() -> None:
-    from scripts.checkpoint import extract_tags
+    from scripts.memory import extract_tags
 
     tags = extract_tags("fixed bug in parser module")
     assert "fixed" in tags
@@ -611,21 +611,21 @@ def test_extract_tags_basic() -> None:
 
 
 def test_extract_tags_excludes_stopwords() -> None:
-    from scripts.checkpoint import extract_tags
+    from scripts.memory import extract_tags
 
     tags = extract_tags("the and of in to a")
     assert all(t not in ("the", "and", "of", "in", "to", "a") for t in tags)
 
 
 def test_extract_tags_empty() -> None:
-    from scripts.checkpoint import extract_tags
+    from scripts.memory import extract_tags
 
     assert extract_tags(None) == []
     assert extract_tags("") == []
 
 
 def test_extract_tags_limit() -> None:
-    from scripts.checkpoint import extract_tags
+    from scripts.memory import extract_tags
 
     tags = extract_tags(
         "one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen",
@@ -635,7 +635,7 @@ def test_extract_tags_limit() -> None:
 
 
 def test_extract_tags_bigrams() -> None:
-    from scripts.checkpoint import extract_tags
+    from scripts.memory import extract_tags
 
     tags = extract_tags("machine learning model training")
     assert any("machine_learning" in t for t in tags)
